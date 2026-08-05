@@ -178,7 +178,7 @@ io.on('connection', socket => {
     });
   });
 
-  socket.on('start', ({ initialState }, cb) => {
+  socket.on('start', ({ initialState, difficulty }, cb) => {
     const room = rooms[socket.data.code];
     if (!room) return cb?.({ ok: false, error: 'Room not found.' });
     if (room.host !== socket.id) return cb?.({ ok: false, error: 'Only the host can start.' });
@@ -192,10 +192,10 @@ io.on('connection', socket => {
       const sock = io.sockets.sockets.get(p.id);
       if (sock) sock.data.seat = p.seat;
     });
-    room.started = true; room.state = initialState;
+    room.started = true; room.state = initialState; room.difficulty = difficulty || 'medium';
     const hostPlayer = room.players.find(p => p.id === socket.id);
     cb?.({ ok: true, seat: hostPlayer?.seat ?? 0 });
-    io.to(room.code).emit('game_started', { state: initialState, players: room.players.map(p => ({ username: p.username, seat: p.seat })) });
+    io.to(room.code).emit('game_started', { state: initialState, players: room.players.map(p => ({ username: p.username, seat: p.seat })), difficulty: room.difficulty });
   });
 
   socket.on('action', ({ type, payload }) => {
