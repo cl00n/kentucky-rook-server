@@ -321,7 +321,7 @@ io.on('connection', socket => {
   });
 
   socket.on('player_stats', ({ bidMade, bidSet, lawedOff, tricksWon, pointsScored, won,
-    cpuDifficulty, perfectBid, shutout, highBidMade, dominator, soloCarry, speedRun, bid150Made, bid160Made, oneHand }) => {
+    cpuDifficulty, perfectBid, shutout, highBidMade, dominator, soloCarry, speedRun, bid150Made, bid160Made, oneHand, quickGame }) => {
     if (!socket.data.userId) return;
     ensureStats(socket.data.userId);
     const s = stats.get(socket.data.userId);
@@ -335,14 +335,21 @@ io.on('connection', socket => {
     s.tricksWon += tricksWon || 0;
     s.pointsScored += pointsScored || 0;
     // CPU difficulty wins
-    if (won === true && oneHand && cpuDifficulty === 'easy')   { s.cpuWinsEasy   = (s.cpuWinsEasy   || 0) + 1; s.leaderboardPoints = (s.leaderboardPoints || 0) + 1; }
-    else if (won === true && oneHand && cpuDifficulty === 'medium') { s.cpuWinsMedium = (s.cpuWinsMedium || 0) + 1; s.leaderboardPoints = (s.leaderboardPoints || 0) + 2; }
-    else if (won === true && oneHand && cpuDifficulty === 'hard')   { s.cpuWinsHard   = (s.cpuWinsHard   || 0) + 1; s.leaderboardPoints = (s.leaderboardPoints || 0) + 3; }
-    else if (won === true && oneHand && !cpuDifficulty)             { s.leaderboardPoints = (s.leaderboardPoints || 0) + 5; } // one hand online
-    else if (won === true && cpuDifficulty === 'easy')   { s.cpuWinsEasy   = (s.cpuWinsEasy   || 0) + 1; s.leaderboardPoints = (s.leaderboardPoints || 0) + 5; }
-    else if (won === true && cpuDifficulty === 'medium') { s.cpuWinsMedium = (s.cpuWinsMedium || 0) + 1; s.leaderboardPoints = (s.leaderboardPoints || 0) + 15; }
-    else if (won === true && cpuDifficulty === 'hard')   { s.cpuWinsHard   = (s.cpuWinsHard   || 0) + 1; s.leaderboardPoints = (s.leaderboardPoints || 0) + 30; }
-    else if (won === true && !cpuDifficulty)              { s.leaderboardPoints = (s.leaderboardPoints || 0) + 50; } // online win
+    // One Hand
+    if      (won && oneHand && cpuDifficulty === 'easy')   { s.cpuWinsEasy++; s.leaderboardPoints = (s.leaderboardPoints||0) + 1; }
+    else if (won && oneHand && cpuDifficulty === 'medium') { s.cpuWinsMedium++; s.leaderboardPoints = (s.leaderboardPoints||0) + 2; }
+    else if (won && oneHand && cpuDifficulty === 'hard')   { s.cpuWinsHard++; s.leaderboardPoints = (s.leaderboardPoints||0) + 3; }
+    else if (won && oneHand && !cpuDifficulty)             { s.leaderboardPoints = (s.leaderboardPoints||0) + 5; }
+    // Quick Game
+    else if (won && quickGame && cpuDifficulty === 'easy')   { s.cpuWinsEasy++; s.leaderboardPoints = (s.leaderboardPoints||0) + 3; }
+    else if (won && quickGame && cpuDifficulty === 'medium') { s.cpuWinsMedium++; s.leaderboardPoints = (s.leaderboardPoints||0) + 8; }
+    else if (won && quickGame && cpuDifficulty === 'hard')   { s.cpuWinsHard++; s.leaderboardPoints = (s.leaderboardPoints||0) + 15; }
+    else if (won && quickGame && !cpuDifficulty)             { s.leaderboardPoints = (s.leaderboardPoints||0) + 25; }
+    // Classic
+    else if (won && cpuDifficulty === 'easy')   { s.cpuWinsEasy++; s.leaderboardPoints = (s.leaderboardPoints||0) + 5; }
+    else if (won && cpuDifficulty === 'medium') { s.cpuWinsMedium++; s.leaderboardPoints = (s.leaderboardPoints||0) + 15; }
+    else if (won && cpuDifficulty === 'hard')   { s.cpuWinsHard++; s.leaderboardPoints = (s.leaderboardPoints||0) + 30; }
+    else if (won && !cpuDifficulty)             { s.leaderboardPoints = (s.leaderboardPoints||0) + 50; } // online classic
     // Special game feats
     if (perfectBid) s.perfectBids = (s.perfectBids || 0) + 1;
     if (shutout) s.shutouts = (s.shutouts || 0) + 1;
