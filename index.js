@@ -308,6 +308,8 @@ io.on('connection', socket => {
     if (!socket.data.userId) return;
     ensureStats(socket.data.userId);
     const s = stats.get(socket.data.userId);
+    // Capture badges BEFORE updating
+    const badgesBefore = new Set(getAchievements(s).map(a => a.id));
     s.gamesPlayed = (s.gamesPlayed || 0) + 1;
     if (won === true) s.gamesWon = (s.gamesWon || 0) + 1;
     if (bidMade) { s.bidsMade++; s.consecutiveBidsMade++; }
@@ -335,7 +337,14 @@ io.on('connection', socket => {
     } else if (won === false) {
       s.currentStreak = 0;
     }
+    // Capture badges AFTER updating
+    const badgesAfter = getAchievements(s);
+    const newlyUnlocked = badgesAfter.filter(a => !badgesBefore.has(a.id));
     saveDB();
+    // Emit newly unlocked achievements back to this socket
+    if (newlyUnlocked.length > 0) {
+      socket.emit('achievements_unlocked', { achievements: newlyUnlocked });
+    }
   });
 
   socket.on('chat', ({ message }) => {
