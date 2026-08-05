@@ -89,18 +89,18 @@ function getAchievements(s) {
 }
 
 const RANKS = [
-  { id: 'five',      label: '5',    icon: '[5]',  minPoints: 0   },
-  { id: 'ten',       label: '10',   icon: '[10]', minPoints: 50  },
-  { id: 'fourteen',  label: '14',   icon: '[14]', minPoints: 150 },
-  { id: 'one',       label: '1',    icon: '[1]',  minPoints: 300 },
-  { id: 'rook',      label: 'ROOK', icon: '🐦',  minPoints: 600 },
+  { id: 'five',      label: '5',    icon: '[5]',  minPoints: 15  },
+  { id: 'ten',       label: '10',   icon: '[10]', minPoints: 60  },
+  { id: 'fourteen',  label: '14',   icon: '[14]', minPoints: 175 },
+  { id: 'one',       label: '1',    icon: '[1]',  minPoints: 350 },
+  { id: 'rook',      label: 'ROOK', icon: '🐦',  minPoints: 700 },
 ];
 
 function getPlayerRank(leaderboardPoints, achievementCount) {
   const score = (leaderboardPoints || 0) + (achievementCount || 0) * 10;
-  let rank = RANKS[0];
+  let rank = null;
   for (const r of RANKS) { if (score >= r.minPoints) rank = r; }
-  return rank;
+  return rank; // null = unranked
 }
 
 function createSession(userId, remember) {
