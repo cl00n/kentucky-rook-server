@@ -68,6 +68,7 @@ function ensureStats(userId) {
     cpuWinsEasy:0, cpuWinsMedium:0, cpuWinsHard:0,
     perfectBids:0, shutouts:0, highBidsMade:0,
     dominatorWins:0, soloCarryHands:0, speedRunWins:0,
+    bid150Made:0, bid160Made:0,
   });
 }
 
@@ -98,6 +99,8 @@ function getAchievements(s) {
   if ((s.speedRunWins || 0) >= 1) badges.push({ id: 'speed_runner', emoji: '🏃', name: 'Speed Runner' });
   if ((s.shutouts || 0) >= 1) badges.push({ id: 'shut_out', emoji: '🔇', name: 'Shut Out' });
   if ((s.highBidsMade || 0) >= 1) badges.push({ id: 'showoff', emoji: '🎪', name: 'Showoff' });
+  if ((s.bid150Made || 0) >= 1) badges.push({ id: 'bid_150', emoji: '🔥', name: 'Heat Check' });
+  if ((s.bid160Made || 0) >= 1) badges.push({ id: 'bid_160', emoji: '💰', name: 'High Roller' });
   return badges;
 }
 
@@ -314,10 +317,12 @@ io.on('connection', socket => {
   });
 
   socket.on('player_stats', ({ bidMade, bidSet, lawedOff, tricksWon, pointsScored, won,
-    cpuDifficulty, perfectBid, shutout, highBidMade, dominator, soloCarry, speedRun }) => {
+    cpuDifficulty, perfectBid, shutout, highBidMade, dominator, soloCarry, speedRun, bid150Made, bid160Made }) => {
     if (!socket.data.userId) return;
     ensureStats(socket.data.userId);
     const s = stats.get(socket.data.userId);
+    s.gamesPlayed = (s.gamesPlayed || 0) + 1;
+    if (won === true) s.gamesWon = (s.gamesWon || 0) + 1;
     if (bidMade) { s.bidsMade++; s.consecutiveBidsMade++; }
     if (bidSet) { s.bidsSet++; s.consecutiveBidsMade = 0; }
     if (lawedOff) s.lawedOff = (s.lawedOff || 0) + 1;
@@ -331,6 +336,8 @@ io.on('connection', socket => {
     if (perfectBid) s.perfectBids = (s.perfectBids || 0) + 1;
     if (shutout) s.shutouts = (s.shutouts || 0) + 1;
     if (highBidMade) s.highBidsMade = (s.highBidsMade || 0) + 1;
+    if (bid150Made) s.bid150Made = (s.bid150Made || 0) + 1;
+    if (bid160Made) s.bid160Made = (s.bid160Made || 0) + 1;
     if (dominator) s.dominatorWins = (s.dominatorWins || 0) + 1;
     if (soloCarry) s.soloCarryHands = (s.soloCarryHands || 0) + 1;
     if (speedRun) s.speedRunWins = (s.speedRunWins || 0) + 1;
