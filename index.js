@@ -522,6 +522,26 @@ io.on('connection', socket => {
     if (tidalWave) s.tidalWaveWins = (s.tidalWaveWins||0) + 1;
     if (onlineWin) s.rookieOnlineWins = (s.rookieOnlineWins||0) + 1;
     if (perfectGame) s.perfectGames = (s.perfectGames||0) + 1;
+    // Batch 3 achievements
+    if (eruption) s.eruptionWins = (s.eruptionWins||0) + 1;
+    if (duelistWin) s.duelistWins = (s.duelistWins||0) + 1;
+    if (fullHouse) s.fullHouseWins = (s.fullHouseWins||0) + 1;
+    if (magician) s.magicianWins = (s.magicianWins||0) + 1;
+    if (doubleAgent) s.doubleAgentWins = (s.doubleAgentWins||0) + 1;
+    if (snake) s.snakeWins = (s.snakeWins||0) + 1;
+    if (pirate) s.pirateWins = (s.pirateWins||0) + 1;
+    if (comebackBig) s.comebackBigWins = (s.comebackBigWins||0) + 1;
+    if (galaxyBrain) s.galaxyBrainWins = (s.galaxyBrainWins||0) + 1;
+    // Online wins (non-CPU, non-special)
+    if (won === true && !cpuDifficulty && !oneHand && !quickGame) s.onlineGamesWon = (s.onlineGamesWon||0) + 1;
+    // Cold blooded streak
+    if (won === true && !bidSet) { s.coldBloodedStreak = (s.coldBloodedStreak||0) + 1; if (s.coldBloodedStreak >= 10) s.coldBloodedWins = (s.coldBloodedWins||0) + 1; }
+    else if (bidSet) { s.coldBloodedStreak = 0; }
+    // Fox: quick game streak
+    if (won === true && quickGame) { s.quickGameStreak = (s.quickGameStreak||0) + 1; if (s.quickGameStreak >= 3) s.foxWins = (s.foxWins||0) + 1; }
+    else if (!quickGame) { s.quickGameStreak = 0; }
+    // Boom: session wins
+    if (won === true) { s.sessionWins = (s.sessionWins||0) + 1; if (s.sessionWins >= 5) s.boomWins = (s.boomWins||0) + 1; }
     // Stone Wall: consecutive games not set
     if (bidSet) { s.consecutiveGamesNotSet = 0; }
     else if (won) { s.consecutiveGamesNotSet = (s.consecutiveGamesNotSet||0) + 1; if (s.consecutiveGamesNotSet >= 3) s.stoneWallGames = (s.stoneWallGames||0) + 1; }
