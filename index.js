@@ -147,7 +147,7 @@ app.post('/auth/register', async (req, res) => {
   if (users.has(username.toLowerCase())) return res.status(409).json({ error: 'Username already taken.' });
   const hash = await bcrypt.hash(password, 10);
   const id = uuidv4();
-  users.set(username.toLowerCase(), { id, username, password: hash });
+  users.set(username.toLowerCase(), { id, username, password: hash, avatar: null });
   ensureStats(id);
   saveDB();
   const token = createSession(id, false);
@@ -162,6 +162,18 @@ app.post('/auth/login', async (req, res) => {
   if (!match) return res.status(401).json({ error: 'Invalid username or password.' });
   const token = createSession(user.id, !!remember);
   res.json({ ok: true, token, username: user.username, userId: user.id });
+});
+
+app.post('/auth/avatar', async (req, res) => {
+  const user = getUserByToken((req.headers.authorization || '').replace('Bearer ', ''));
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+  const { avatar } = req.body || {};
+  if (!avatar || typeof avatar !== 'string') return res.status(400).json({ error: 'No avatar provided' });
+  if (avatar.length > 200000) return res.status(400).json({ error: 'Image too large (max ~150KB)' });
+  const fullUser = [...users.values()].find(u => u.id === user.id);
+  if (fullUser) fullUser.avatar = avatar;
+  saveDB();
+  res.json({ ok: true });
 });
 
 app.post('/auth/validate', (req, res) => {
@@ -200,6 +212,7 @@ app.get('/leaderboard', (_, res) => {
       achievements: getAchievements(s),
       leaderboardPoints: s.leaderboardPoints || 0,
       rank: getPlayerRank(s.leaderboardPoints, getAchievements(s).length),
+      avatar: u.avatar || null,
     };
   }).filter(Boolean).map(p => ({
     ...p,
@@ -244,7 +257,7 @@ function makeCode() {
 }
 
 function roomSummary(room) {
-  return { code: room.code, host: room.hostUsername, players: room.players.map(p => ({ username: p.username, seat: p.seat, ready: p.ready })), started: room.started };
+  return { code: room.code, host: room.hostUsername, players: room.players.map(p => ({ username: p.username, seat: p.seat, ready: p.ready, avatar: users.get(p.username?.toLowerCase())?.avatar || null })), started: room.started };
 }
 
 io.on('connection', socket => {
