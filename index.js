@@ -31,27 +31,34 @@ function saveDB() {
 }
 
 
-const fs = require('fs');
-const DB_FILE = process.env.DB_PATH || '/tmp/rook-data.json';
+const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL || 'https://romantic-monitor-131688.upstash.io';
+const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || 'gQAAAAAAAgJoAAIgcDEzMmI5OWE5YTU5Nzc0MzA0YTg2MzY4MTYwMGE0MmFhYw';
 
-function loadDB() {
+async function redisCmd(cmd) {
   try {
-    if (fs.existsSync(DB_FILE)) {
-      const d = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-      if (d.users) d.users.forEach(([k,v]) => users.set(k, v));
-      if (d.stats) d.stats.forEach(([k,v]) => stats.set(k, v));
-      console.log(`Loaded ${users.size} users from disk`);
-    }
-  } catch(e) { console.warn('Could not load DB:', e.message); }
+    const res = await fetch(`${REDIS_URL}/${cmd.map(encodeURIComponent).join('/')}`, {
+      headers: { Authorization: `Bearer ${REDIS_TOKEN}` }
+    });
+    const data = await res.json();
+    return data.result;
+  } catch(e) { console.warn('Redis error:', e.message); return null; }
 }
 
-function saveDB() {
+async function loadDB() {
   try {
-    fs.writeFileSync(DB_FILE, JSON.stringify({
-      users: [...users.entries()],
-      stats: [...stats.entries()]
-    }));
-  } catch(e) { console.warn('Could not save DB:', e.message); }
+    const usersJson = await redisCmd(['GET', 'rook:users']);
+    const statsJson = await redisCmd(['GET', 'rook:stats']);
+    if (usersJson) JSON.parse(usersJson).forEach(([k,v]) => users.set(k, v));
+    if (statsJson) JSON.parse(statsJson).forEach(([k,v]) => stats.set(k, v));
+    console.log(`Loaded ${users.size} users from Redis`);
+  } catch(e) { console.warn('Could not load from Redis:', e.message); }
+}
+
+async function saveDB() {
+  try {
+    await redisCmd(['SET', 'rook:users', JSON.stringify([...users.entries()])]);
+    await redisCmd(['SET', 'rook:stats', JSON.stringify([...stats.entries()])]);
+  } catch(e) { console.warn('Could not save to Redis:', e.message); }
 }
 
 function ensureStats(userId) {
@@ -279,7 +286,7 @@ setInterval(() => {
 }, 60000);
 
 loadDB();
-loadDB();
+loadDB().then(() => console.log('DB ready'));
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => console.log(`Rook server on port ${PORT}`));
 // deploy test Tue Aug  4 22:28:54 EDT 2026
