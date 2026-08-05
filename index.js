@@ -182,7 +182,7 @@ io.on('connection', socket => {
     const room = rooms[socket.data.code];
     if (!room) return cb?.({ ok: false, error: 'Room not found.' });
     if (room.host !== socket.id) return cb?.({ ok: false, error: 'Only the host can start.' });
-    if (room.players.length < 2) return cb?.({ ok: false, error: 'Need at least 2 players.' });
+    if (room.players.length < 1) return cb?.({ ok: false, error: 'Room is empty.' });
     // Reassign seats based on teams: team 0 → seats 0,2; team 1 → seats 1,3
     const team0 = room.players.filter(p => (p.team ?? p.seat % 2) === 0);
     const team1 = room.players.filter(p => (p.team ?? p.seat % 2) === 1);
@@ -193,7 +193,8 @@ io.on('connection', socket => {
       if (sock) sock.data.seat = p.seat;
     });
     room.started = true; room.state = initialState;
-    cb?.({ ok: true });
+    const hostPlayer = room.players.find(p => p.id === socket.id);
+    cb?.({ ok: true, seat: hostPlayer?.seat ?? 0 });
     io.to(room.code).emit('game_started', { state: initialState, players: room.players.map(p => ({ username: p.username, seat: p.seat })) });
   });
 
