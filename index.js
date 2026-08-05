@@ -49,7 +49,7 @@ function ensureStats(userId) {
   if (!stats.has(userId)) stats.set(userId, {
     gamesPlayed:0, gamesWon:0, bidsMade:0, bidsSet:0,
     tricksWon:0, pointsScored:0, currentStreak:0, bestStreak:0, lawedOff:0, consecutiveBidsMade:0,
-    cpuWinsEasy:0, cpuWinsMedium:0, cpuWinsHard:0,
+    cpuWinsEasy:0, cpuWinsMedium:0, cpuWinsHard:0, leaderboardPoints:0,
     perfectBids:0, shutouts:0, highBidsMade:0,
     dominatorWins:0, soloCarryHands:0, speedRunWins:0,
     bid150Made:0, bid160Made:0,
@@ -170,7 +170,8 @@ app.get('/leaderboard', (_, res) => {
     };
   }).filter(Boolean).map(p => ({
     ...p,
-    rankScore: (p.gamesWon * 10) + (p.winPct * 5) + (p.bestStreak * 3) + Math.floor(p.tricksWon / 10),
+    leaderboardPoints: s.leaderboardPoints || 0,
+    rankScore: (s.leaderboardPoints || 0),
   })).sort((a, b) => b.rankScore - a.rankScore).slice(0, 50);
   res.json(rows);
 });
@@ -318,9 +319,10 @@ io.on('connection', socket => {
     s.tricksWon += tricksWon || 0;
     s.pointsScored += pointsScored || 0;
     // CPU difficulty wins
-    if (won === true && cpuDifficulty === 'easy') s.cpuWinsEasy = (s.cpuWinsEasy || 0) + 1;
-    if (won === true && cpuDifficulty === 'medium') s.cpuWinsMedium = (s.cpuWinsMedium || 0) + 1;
-    if (won === true && cpuDifficulty === 'hard') s.cpuWinsHard = (s.cpuWinsHard || 0) + 1;
+    if (won === true && cpuDifficulty === 'easy')   { s.cpuWinsEasy   = (s.cpuWinsEasy   || 0) + 1; s.leaderboardPoints = (s.leaderboardPoints || 0) + 5; }
+    if (won === true && cpuDifficulty === 'medium') { s.cpuWinsMedium = (s.cpuWinsMedium || 0) + 1; s.leaderboardPoints = (s.leaderboardPoints || 0) + 15; }
+    if (won === true && cpuDifficulty === 'hard')   { s.cpuWinsHard   = (s.cpuWinsHard   || 0) + 1; s.leaderboardPoints = (s.leaderboardPoints || 0) + 30; }
+    if (won === true && !cpuDifficulty)              { s.leaderboardPoints = (s.leaderboardPoints || 0) + 50; } // online win
     // Special game feats
     if (perfectBid) s.perfectBids = (s.perfectBids || 0) + 1;
     if (shutout) s.shutouts = (s.shutouts || 0) + 1;
