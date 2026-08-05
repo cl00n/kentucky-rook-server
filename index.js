@@ -62,7 +62,25 @@ async function saveDB() {
 }
 
 function ensureStats(userId) {
-  if (!stats.has(userId)) stats.set(userId, { gamesPlayed:0, gamesWon:0, bidsMade:0, bidsSet:0, tricksWon:0, pointsScored:0 });
+  if (!stats.has(userId)) stats.set(userId, { gamesPlayed:0, gamesWon:0, bidsMade:0, bidsSet:0,
+    tricksWon:0, pointsScored:0, currentStreak:0, bestStreak:0, lawedOff:0, consecutiveBidsMade:0 });
+}
+
+function getAchievements(s) {
+  const badges = [];
+  if ((s.gamesWon || 0) >= 1) badges.push({ id: 'first_win', emoji: '🎉', name: 'First Win' });
+  if ((s.gamesWon || 0) >= 10) badges.push({ id: 'veteran', emoji: '🏅', name: 'Veteran' });
+  if ((s.gamesWon || 0) >= 25) badges.push({ id: 'rook_master', emoji: '👑', name: 'Rook Master' });
+  if ((s.currentStreak || 0) >= 3) badges.push({ id: 'on_fire', emoji: '🔥', name: 'On Fire' });
+  if ((s.bestStreak || 0) >= 5) badges.push({ id: 'unstoppable', emoji: '⚡', name: 'Unstoppable' });
+  if ((s.consecutiveBidsMade || 0) >= 10) badges.push({ id: 'sharpshooter', emoji: '🎯', name: 'Sharpshooter' });
+  if ((s.tricksWon || 0) >= 100) badges.push({ id: 'card_shark', emoji: '🃏', name: 'Card Shark' });
+  if ((s.lawedOff || 0) >= 5) badges.push({ id: 'lawed_off', emoji: '💀', name: 'Lawed Off' });
+  if ((s.bidsMade || 0) + (s.bidsSet || 0) >= 10) {
+    const pct = Math.round(100 * (s.bidsMade || 0) / ((s.bidsMade || 0) + (s.bidsSet || 0)));
+    if (pct >= 80) badges.push({ id: 'clutch', emoji: '💎', name: 'Clutch Bidder' });
+  }
+  return badges;
 }
 
 function createSession(userId, remember) {
@@ -119,8 +137,24 @@ app.post('/auth/validate', (req, res) => {
 app.get('/leaderboard', (_, res) => {
   const rows = [...stats.entries()].map(([userId, s]) => {
     const u = [...users.values()].find(u => u.id === userId);
-    return { username: u?.username, ...s, winPct: s.gamesPlayed > 0 ? +(100*s.gamesWon/s.gamesPlayed).toFixed(1) : 0 };
-  }).filter(r => r.username && r.gamesPlayed > 0).sort((a,b) => b.gamesWon - a.gamesWon).slice(0, 50);
+    if (!u || !s.gamesPlayed) return null;
+    const bidTotal = (s.bidsMade || 0) + (s.bidsSet || 0);
+    return {
+      username: u.username,
+      gamesPlayed: s.gamesPlayed || 0,
+      gamesWon: s.gamesWon || 0,
+      winPct: s.gamesPlayed > 0 ? +(100 * s.gamesWon / s.gamesPlayed).toFixed(1) : 0,
+      bidsMade: s.bidsMade || 0,
+      bidsSet: s.bidsSet || 0,
+      bidPct: bidTotal > 0 ? +(100 * s.bidsMade / bidTotal).toFixed(1) : 0,
+      tricksWon: s.tricksWon || 0,
+      pointsScored: s.pointsScored || 0,
+      currentStreak: s.currentStreak || 0,
+      bestStreak: s.bestStreak || 0,
+      lawedOff: s.lawedOff || 0,
+      achievements: getAchievements(s),
+    };
+  }).filter(Boolean).sort((a, b) => b.gamesWon - a.gamesWon || b.winPct - a.winPct).slice(0, 50);
   res.json(rows);
 });
 
@@ -252,12 +286,22 @@ io.on('connection', socket => {
     });
   });
 
-  socket.on('player_stats', ({ bidMade, bidSet, tricksWon, pointsScored }) => {
+  socket.on('player_stats', ({ bidMade, bidSet, lawedOff, tricksWon, pointsScored, won }) => {
     if (!socket.data.userId) return;
     ensureStats(socket.data.userId);
     const s = stats.get(socket.data.userId);
-    s.bidsMade += bidMade||0; s.bidsSet += bidSet||0;
-    s.tricksWon += tricksWon||0; s.pointsScored += pointsScored||0;
+    if (bidMade) { s.bidsMade++; s.consecutiveBidsMade++; }
+    if (bidSet) { s.bidsSet++; s.consecutiveBidsMade = 0; }
+    if (lawedOff) s.lawedOff = (s.lawedOff || 0) + 1;
+    s.tricksWon += tricksWon || 0;
+    s.pointsScored += pointsScored || 0;
+    if (won === true) {
+      s.currentStreak = (s.currentStreak || 0) + 1;
+      s.bestStreak = Math.max(s.bestStreak || 0, s.currentStreak);
+    } else if (won === false) {
+      s.currentStreak = 0;
+    }
+    saveDB();
   });
 
   socket.on('chat', ({ message }) => {
