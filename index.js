@@ -335,7 +335,10 @@ io.on('connection', socket => {
     s.tricksWon += tricksWon || 0;
     s.pointsScored += pointsScored || 0;
     // CPU difficulty wins
-    if (won === true && oneHand)                    { s.leaderboardPoints = (s.leaderboardPoints || 0) + 1; } // one hand win (any mode)
+    if (won === true && oneHand && cpuDifficulty === 'easy')   { s.cpuWinsEasy   = (s.cpuWinsEasy   || 0) + 1; s.leaderboardPoints = (s.leaderboardPoints || 0) + 1; }
+    else if (won === true && oneHand && cpuDifficulty === 'medium') { s.cpuWinsMedium = (s.cpuWinsMedium || 0) + 1; s.leaderboardPoints = (s.leaderboardPoints || 0) + 2; }
+    else if (won === true && oneHand && cpuDifficulty === 'hard')   { s.cpuWinsHard   = (s.cpuWinsHard   || 0) + 1; s.leaderboardPoints = (s.leaderboardPoints || 0) + 3; }
+    else if (won === true && oneHand && !cpuDifficulty)             { s.leaderboardPoints = (s.leaderboardPoints || 0) + 5; } // one hand online
     else if (won === true && cpuDifficulty === 'easy')   { s.cpuWinsEasy   = (s.cpuWinsEasy   || 0) + 1; s.leaderboardPoints = (s.leaderboardPoints || 0) + 5; }
     else if (won === true && cpuDifficulty === 'medium') { s.cpuWinsMedium = (s.cpuWinsMedium || 0) + 1; s.leaderboardPoints = (s.leaderboardPoints || 0) + 15; }
     else if (won === true && cpuDifficulty === 'hard')   { s.cpuWinsHard   = (s.cpuWinsHard   || 0) + 1; s.leaderboardPoints = (s.leaderboardPoints || 0) + 30; }
