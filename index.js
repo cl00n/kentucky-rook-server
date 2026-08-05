@@ -369,8 +369,12 @@ setInterval(() => {
   });
 }, 60000);
 
-loadDB();
-loadDB().then(() => console.log('DB ready'));
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => console.log(`Rook server on port ${PORT}`));
+loadDB().then(() => {
+  console.log('DB ready, starting server...');
+  server.listen(PORT, () => console.log(`Rook server on port ${PORT}`));
+}).catch(e => {
+  console.error('DB load failed, starting anyway:', e.message);
+  server.listen(PORT, () => console.log(`Rook server on port ${PORT}`));
+});
 // deploy test Tue Aug  4 22:28:54 EDT 2026
