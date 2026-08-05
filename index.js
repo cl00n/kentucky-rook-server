@@ -190,6 +190,7 @@ app.get('/leaderboard', (_, res) => {
   const rows = [...stats.entries()].map(([userId, s]) => {
     const u = [...users.values()].find(u => u.id === userId);
     if (!u || !s.gamesPlayed) return null;
+    if (u.username.toLowerCase() === 'admin') return null;
     const bidTotal = (s.bidsMade || 0) + (s.bidsSet || 0);
     return {
       username: u.username,
@@ -437,6 +438,7 @@ io.on('connection', socket => {
     rookTrickWin, cleanSweep, ghostWin, gamblerBid, nonBidderWin, clutchRook, bombSquad, comebackWin }) => {
     if (!socket.data.userId) return;
     ensureStats(socket.data.userId);
+    if (socket.data.username?.toLowerCase() === 'admin') return;
     const s = stats.get(socket.data.userId);
     // Capture badges BEFORE updating
     const badgesBefore = new Set(getAchievements(s).map(a => a.id));
