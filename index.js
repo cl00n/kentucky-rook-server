@@ -321,7 +321,7 @@ io.on('connection', socket => {
   });
 
   socket.on('player_stats', ({ bidMade, bidSet, lawedOff, tricksWon, pointsScored, won,
-    cpuDifficulty, perfectBid, shutout, highBidMade, dominator, soloCarry, speedRun, bid150Made, bid160Made }) => {
+    cpuDifficulty, perfectBid, shutout, highBidMade, dominator, soloCarry, speedRun, bid150Made, bid160Made, oneHand }) => {
     if (!socket.data.userId) return;
     ensureStats(socket.data.userId);
     const s = stats.get(socket.data.userId);
@@ -335,10 +335,11 @@ io.on('connection', socket => {
     s.tricksWon += tricksWon || 0;
     s.pointsScored += pointsScored || 0;
     // CPU difficulty wins
-    if (won === true && cpuDifficulty === 'easy')   { s.cpuWinsEasy   = (s.cpuWinsEasy   || 0) + 1; s.leaderboardPoints = (s.leaderboardPoints || 0) + 5; }
-    if (won === true && cpuDifficulty === 'medium') { s.cpuWinsMedium = (s.cpuWinsMedium || 0) + 1; s.leaderboardPoints = (s.leaderboardPoints || 0) + 15; }
-    if (won === true && cpuDifficulty === 'hard')   { s.cpuWinsHard   = (s.cpuWinsHard   || 0) + 1; s.leaderboardPoints = (s.leaderboardPoints || 0) + 30; }
-    if (won === true && !cpuDifficulty)              { s.leaderboardPoints = (s.leaderboardPoints || 0) + 50; } // online win
+    if (won === true && oneHand)                    { s.leaderboardPoints = (s.leaderboardPoints || 0) + 1; } // one hand win (any mode)
+    else if (won === true && cpuDifficulty === 'easy')   { s.cpuWinsEasy   = (s.cpuWinsEasy   || 0) + 1; s.leaderboardPoints = (s.leaderboardPoints || 0) + 5; }
+    else if (won === true && cpuDifficulty === 'medium') { s.cpuWinsMedium = (s.cpuWinsMedium || 0) + 1; s.leaderboardPoints = (s.leaderboardPoints || 0) + 15; }
+    else if (won === true && cpuDifficulty === 'hard')   { s.cpuWinsHard   = (s.cpuWinsHard   || 0) + 1; s.leaderboardPoints = (s.leaderboardPoints || 0) + 30; }
+    else if (won === true && !cpuDifficulty)              { s.leaderboardPoints = (s.leaderboardPoints || 0) + 50; } // online win
     // Special game feats
     if (perfectBid) s.perfectBids = (s.perfectBids || 0) + 1;
     if (shutout) s.shutouts = (s.shutouts || 0) + 1;
