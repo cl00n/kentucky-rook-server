@@ -60,6 +60,8 @@ function ensureStats(userId) {
     bid150Made:0, bid160Made:0,
     rookTrickWins:0, cleanSweeps:0, ghostWins:0, gamblerBids:0,
     nonBidderWins:0, clutchRookWins:0, bombSquads:0, comebackWins:0,
+    classicWins:0, quickWins:0, oneHandWins:0,
+    warOfAttritionWins:0, fiveHundredWins:0, speedsterWins:0, allInWins:0,
   });
 }
 
@@ -119,6 +121,18 @@ function getAchievements(s) {
   if ((s.clutchRookWins || 0) >= 1) badges.push({ id: 'clutch_rook', emoji: '🔑', name: 'The Key', desc: 'Win the last trick with the Rook card' });
   if ((s.bombSquads || 0) >= 1) badges.push({ id: 'bomb_squad', emoji: '💥', name: 'Bomb Squad', desc: 'Use Rook to steal a trick worth 30+ pts' });
   if ((s.comebackWins || 0) >= 1) badges.push({ id: 'comeback_kid', emoji: '📈', name: 'Comeback Kid', desc: 'Win while trailing by 30+ pts' });
+  // Mode-specific achievements
+  if ((s.classicWins||0) >= 5) badges.push({ id: 'marathon_man', emoji: '🏰', name: 'Marathon Man', desc: 'Win 5 Classic games' });
+  if ((s.classicWins||0) >= 25) badges.push({ id: 'classic_champ', emoji: '👑', name: 'Classic Champion', desc: 'Win 25 Classic games' });
+  if ((s.warOfAttritionWins||0) >= 1) badges.push({ id: 'war_attrition', emoji: '⚔️', name: 'War of Attrition', desc: 'Win a Classic game lasting 15+ hands' });
+  if ((s.fiveHundredWins||0) >= 1) badges.push({ id: 'five_hundred', emoji: '💪', name: '500 Club', desc: 'Win a Classic game with 500+ points' });
+  if ((s.quickWins||0) >= 5) badges.push({ id: 'quick_draw', emoji: '⚡', name: 'Quick Draw', desc: 'Win 5 Quick Games' });
+  if ((s.quickWins||0) >= 30) badges.push({ id: 'quick_thirty', emoji: '🔁', name: 'Quick Thirty', desc: 'Win 30 Quick Games' });
+  if ((s.speedsterWins||0) >= 1) badges.push({ id: 'speedster', emoji: '🏎️', name: 'Speedster', desc: 'Win a Quick Game in 3 hands or less' });
+  if ((s.oneHandWins||0) >= 1) badges.push({ id: 'one_shot', emoji: '☝️', name: 'One Shot', desc: 'Win your first One Hand game' });
+  if ((s.oneHandWins||0) >= 5) badges.push({ id: 'one_and_done', emoji: '🃏', name: 'One and Done', desc: 'Win 5 One Hand games' });
+  if ((s.oneHandWins||0) >= 25) badges.push({ id: 'high_stakes', emoji: '🎰', name: 'High Stakes', desc: 'Win 25 One Hand games' });
+  if ((s.allInWins||0) >= 1) badges.push({ id: 'all_in', emoji: '💣', name: 'All In', desc: 'Win a One Hand game with 180+ pts' });
   const badgeCount = badges.length;
   if (badgeCount >= 10) badges.push({ id: 'decorated', emoji: '🎖️', name: 'Decorated', desc: 'Earn 10 achievements' });
   return badges;
@@ -465,7 +479,8 @@ io.on('connection', socket => {
   socket.on('player_stats', ({ bidMade, bidSet, lawedOff, tricksWon, pointsScored, won,
     cpuDifficulty, perfectBid, shutout, highBidMade, dominator, soloCarry, speedRun, bid150Made, bid160Made, oneHand, quickGame,
     rookTrickWin, cleanSweep, ghostWin, gamblerBid, nonBidderWin, clutchRook, bombSquad, comebackWin,
-    hatTrick, bloodMoney, circusAct, slowBurn, pointMagnet, wildCard, tidalWave, onlineWin, perfectGame }) => {
+    hatTrick, bloodMoney, circusAct, slowBurn, pointMagnet, wildCard, tidalWave, onlineWin, perfectGame,
+    warOfAttrition, fiveHundred, speedster, allIn }) => {
     if (!socket.data.userId) return;
     ensureStats(socket.data.userId);
     if (socket.data.username?.toLowerCase() === 'admin') return;
@@ -534,6 +549,14 @@ io.on('connection', socket => {
     if (galaxyBrain) s.galaxyBrainWins = (s.galaxyBrainWins||0) + 1;
     // Online wins (non-CPU, non-special)
     if (won === true && !cpuDifficulty && !oneHand && !quickGame) s.onlineGamesWon = (s.onlineGamesWon||0) + 1;
+    // Mode-specific wins
+    if (won === true && !oneHand && !quickGame) s.classicWins = (s.classicWins||0) + 1;
+    if (won === true && quickGame) s.quickWins = (s.quickWins||0) + 1;
+    if (won === true && oneHand) s.oneHandWins = (s.oneHandWins||0) + 1;
+    if (warOfAttrition) s.warOfAttritionWins = (s.warOfAttritionWins||0) + 1;
+    if (fiveHundred) s.fiveHundredWins = (s.fiveHundredWins||0) + 1;
+    if (speedster) s.speedsterWins = (s.speedsterWins||0) + 1;
+    if (allIn) s.allInWins = (s.allInWins||0) + 1;
     // Cold blooded streak
     if (won === true && !bidSet) { s.coldBloodedStreak = (s.coldBloodedStreak||0) + 1; if (s.coldBloodedStreak >= 10) s.coldBloodedWins = (s.coldBloodedWins||0) + 1; }
     else if (bidSet) { s.coldBloodedStreak = 0; }
