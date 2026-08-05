@@ -11,28 +11,9 @@ const sessions = new Map();    // token -> { userId, remember, expiresAt }
 const stats = new Map();       // userId -> { gamesPlayed, gamesWon, bidsMade, bidsSet, tricksWon, pointsScored }
 
 
-const fs = require('fs');
-const DB_FILE = process.env.DB_PATH || './data.json';
-
-function loadDB() {
-  try {
-    if (fs.existsSync(DB_FILE)) {
-      const d = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-      if (d.users) d.users.forEach(([k,v]) => users.set(k, v));
-      if (d.stats) d.stats.forEach(([k,v]) => stats.set(k, v));
-    }
-  } catch(e) { console.warn('Could not load DB:', e.message); }
-}
-
-function saveDB() {
-  try {
-    fs.writeFileSync(DB_FILE, JSON.stringify({ users: [...users.entries()], stats: [...stats.entries()] }));
-  } catch(e) { console.warn('Could not save DB:', e.message); }
-}
-
-
-const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL || 'https://romantic-monitor-131688.upstash.io';
-const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || 'gQAAAAAAAgJoAAIgcDEzMmI5OWE5YTU5Nzc0MzA0YTg2MzY4MTYwMGE0MmFhYw';
+// Redis persistence — hardcoded Upstash credentials (no env var override to avoid pointing at wrong DB)
+const REDIS_URL = 'https://romantic-monitor-131688.upstash.io';
+const REDIS_TOKEN = 'gQAAAAAAAgJoAAIgcDEzMmI5OWE5YTU5Nzc0MzA0YTg2MzY4MTYwMGE0MmFhYw';
 
 async function redisCmd(cmd) {
   try {
