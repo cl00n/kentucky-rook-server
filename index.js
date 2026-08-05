@@ -168,7 +168,10 @@ app.get('/leaderboard', (_, res) => {
       speedRunWins: s.speedRunWins || 0,
       achievements: getAchievements(s),
     };
-  }).filter(Boolean).sort((a, b) => b.gamesWon - a.gamesWon || b.winPct - a.winPct).slice(0, 50);
+  }).filter(Boolean).map(p => ({
+    ...p,
+    rankScore: (p.gamesWon * 10) + (p.winPct * 5) + (p.bestStreak * 3) + Math.floor(p.tricksWon / 10),
+  })).sort((a, b) => b.rankScore - a.rankScore).slice(0, 50);
   res.json(rows);
 });
 
