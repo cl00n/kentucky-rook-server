@@ -10,6 +10,26 @@ const users = new Map();       // username.lower -> { id, username, password }
 const sessions = new Map();    // token -> { userId, remember, expiresAt }
 const stats = new Map();       // userId -> { gamesPlayed, gamesWon, bidsMade, bidsSet, tricksWon, pointsScored }
 
+
+const fs = require('fs');
+const DB_FILE = process.env.DB_PATH || './data.json';
+
+function loadDB() {
+  try {
+    if (fs.existsSync(DB_FILE)) {
+      const d = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+      if (d.users) d.users.forEach(([k,v]) => users.set(k, v));
+      if (d.stats) d.stats.forEach(([k,v]) => stats.set(k, v));
+    }
+  } catch(e) { console.warn('Could not load DB:', e.message); }
+}
+
+function saveDB() {
+  try {
+    fs.writeFileSync(DB_FILE, JSON.stringify({ users: [...users.entries()], stats: [...stats.entries()] }));
+  } catch(e) { console.warn('Could not save DB:', e.message); }
+}
+
 function ensureStats(userId) {
   if (!stats.has(userId)) stats.set(userId, { gamesPlayed:0, gamesWon:0, bidsMade:0, bidsSet:0, tricksWon:0, pointsScored:0 });
 }
@@ -44,6 +64,7 @@ app.post('/auth/register', async (req, res) => {
   const id = uuidv4();
   users.set(username.toLowerCase(), { id, username, password: hash });
   ensureStats(id);
+  saveDB();
   const token = createSession(id, false);
   res.json({ ok: true, token, username, userId: id });
 });
@@ -195,5 +216,6 @@ io.on('connection', socket => {
   });
 });
 
+loadDB();
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => console.log(`Rook server on port ${PORT}`));
