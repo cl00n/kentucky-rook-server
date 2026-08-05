@@ -105,6 +105,15 @@ app.get('/rooms', (_, res) => {
   res.json(list);
 });
 
+
+app.post('/cleanup', (req, res) => {
+  const before = Object.keys(rooms).length;
+  Object.keys(rooms).forEach(code => {
+    if (rooms[code].players.length === 0) delete rooms[code];
+  });
+  res.json({ ok: true, removed: before - Object.keys(rooms).length, remaining: Object.keys(rooms).length });
+});
+
 app.get('/health', (_, res) => res.json({ ok: true, rooms: Object.keys(rooms).length, users: users.size }));
 
 // ── Socket.io ────────────────────────────────────────────────────────────────
@@ -215,6 +224,14 @@ io.on('connection', socket => {
     io.to(code).emit('player_left', { username, room: roomSummary(room) });
   });
 });
+
+
+// Auto-cleanup empty rooms every 60 seconds
+setInterval(() => {
+  Object.keys(rooms).forEach(code => {
+    if (rooms[code].players.length === 0) delete rooms[code];
+  });
+}, 60000);
 
 loadDB();
 const PORT = process.env.PORT || 3001;
