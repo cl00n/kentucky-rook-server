@@ -72,6 +72,18 @@ app.get('/leaderboard', (_, res) => {
   res.json(rows);
 });
 
+
+app.get('/rooms', (_, res) => {
+  const list = Object.values(rooms).map(r => ({
+    code: r.code,
+    host: r.hostUsername,
+    players: r.players.map(p => p.username),
+    started: r.started,
+    open: !r.started && r.players.length < 4,
+  }));
+  res.json(list);
+});
+
 app.get('/health', (_, res) => res.json({ ok: true, rooms: Object.keys(rooms).length, users: users.size }));
 
 // ── Socket.io ────────────────────────────────────────────────────────────────
