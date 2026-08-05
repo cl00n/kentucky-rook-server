@@ -52,7 +52,7 @@ function ensureStats(userId) {
     cpuWinsEasy:0, cpuWinsMedium:0, cpuWinsHard:0, leaderboardPoints:0,
     perfectBids:0, shutouts:0, highBidsMade:0,
     dominatorWins:0, soloCarryHands:0, speedRunWins:0,
-    bid150Made:0, bid160Made:0, selectedBadge:null,
+    bid150Made:0, bid160Made:0,
   });
 }
 
@@ -184,8 +184,6 @@ app.get('/leaderboard', (_, res) => {
       achievements: getAchievements(s),
       leaderboardPoints: s.leaderboardPoints || 0,
       rank: getPlayerRank(s.leaderboardPoints, getAchievements(s).length),
-      selectedBadge: s.selectedBadge || null,
-      selectedBadgeEmoji: s.selectedBadge ? (getAchievements(s).find(a => a.id === s.selectedBadge)?.emoji || null) : null,
     };
   }).filter(Boolean).map(p => ({
     ...p,
@@ -375,20 +373,6 @@ io.on('connection', socket => {
     // Emit newly unlocked achievements back to this socket
     if (newlyUnlocked.length > 0) {
       socket.emit('achievements_unlocked', { achievements: newlyUnlocked });
-    }
-  });
-
-  socket.on('set_badge', ({ badgeId }, cb) => {
-    if (!socket.data.userId) return cb?.({ ok: false });
-    ensureStats(socket.data.userId);
-    const s = stats.get(socket.data.userId);
-    const earned = getAchievements(s).map(a => a.id);
-    if (badgeId === null || earned.includes(badgeId)) {
-      s.selectedBadge = badgeId;
-      saveDB();
-      cb?.({ ok: true });
-    } else {
-      cb?.({ ok: false, error: 'Badge not earned' });
     }
   });
 
