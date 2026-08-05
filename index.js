@@ -88,6 +88,21 @@ function getAchievements(s) {
   return badges;
 }
 
+const RANKS = [
+  { id: 'five',      label: '5',    icon: '[5]',  minPoints: 0   },
+  { id: 'ten',       label: '10',   icon: '[10]', minPoints: 50  },
+  { id: 'fourteen',  label: '14',   icon: '[14]', minPoints: 150 },
+  { id: 'one',       label: '1',    icon: '[1]',  minPoints: 300 },
+  { id: 'rook',      label: 'ROOK', icon: '🐦',  minPoints: 600 },
+];
+
+function getPlayerRank(leaderboardPoints, achievementCount) {
+  const score = (leaderboardPoints || 0) + (achievementCount || 0) * 10;
+  let rank = RANKS[0];
+  for (const r of RANKS) { if (score >= r.minPoints) rank = r; }
+  return rank;
+}
+
 function createSession(userId, remember) {
   const token = uuidv4();
   const now = Math.floor(Date.now() / 1000);
@@ -167,11 +182,12 @@ app.get('/leaderboard', (_, res) => {
       soloCarryHands: s.soloCarryHands || 0,
       speedRunWins: s.speedRunWins || 0,
       achievements: getAchievements(s),
+      leaderboardPoints: s.leaderboardPoints || 0,
+      rank: getPlayerRank(s.leaderboardPoints, getAchievements(s).length),
     };
   }).filter(Boolean).map(p => ({
     ...p,
-    leaderboardPoints: s.leaderboardPoints || 0,
-    rankScore: (s.leaderboardPoints || 0),
+    rankScore: p.leaderboardPoints || 0,
   })).sort((a, b) => b.rankScore - a.rankScore).slice(0, 50);
   res.json(rows);
 });
