@@ -89,11 +89,11 @@ function getAchievements(s) {
 }
 
 const RANKS = [
-  { id: 'five',      label: '5',    icon: '[5]',  minPoints: 25  },
-  { id: 'ten',       label: '10',   icon: '[10]', minPoints: 70  },
-  { id: 'fourteen',  label: '14',   icon: '[14]', minPoints: 185 },
-  { id: 'one',       label: '1',    icon: '[1]',  minPoints: 360 },
-  { id: 'rook',      label: 'ROOK', icon: '🐦',  minPoints: 710 },
+  { id: 'five',      label: '5',    icon: '[5]',  minPoints: 45  },
+  { id: 'ten',       label: '10',   icon: '[10]', minPoints: 90  },
+  { id: 'fourteen',  label: '14',   icon: '[14]', minPoints: 205 },
+  { id: 'one',       label: '1',    icon: '[1]',  minPoints: 380 },
+  { id: 'rook',      label: 'ROOK', icon: '🐦',  minPoints: 730 },
 ];
 
 function getPlayerRank(leaderboardPoints, achievementCount) {
