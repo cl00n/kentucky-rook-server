@@ -30,6 +30,30 @@ function saveDB() {
   } catch(e) { console.warn('Could not save DB:', e.message); }
 }
 
+
+const fs = require('fs');
+const DB_FILE = process.env.DB_PATH || '/tmp/rook-data.json';
+
+function loadDB() {
+  try {
+    if (fs.existsSync(DB_FILE)) {
+      const d = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+      if (d.users) d.users.forEach(([k,v]) => users.set(k, v));
+      if (d.stats) d.stats.forEach(([k,v]) => stats.set(k, v));
+      console.log(`Loaded ${users.size} users from disk`);
+    }
+  } catch(e) { console.warn('Could not load DB:', e.message); }
+}
+
+function saveDB() {
+  try {
+    fs.writeFileSync(DB_FILE, JSON.stringify({
+      users: [...users.entries()],
+      stats: [...stats.entries()]
+    }));
+  } catch(e) { console.warn('Could not save DB:', e.message); }
+}
+
 function ensureStats(userId) {
   if (!stats.has(userId)) stats.set(userId, { gamesPlayed:0, gamesWon:0, bidsMade:0, bidsSet:0, tricksWon:0, pointsScored:0 });
 }
@@ -254,6 +278,7 @@ setInterval(() => {
   });
 }, 60000);
 
+loadDB();
 loadDB();
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => console.log(`Rook server on port ${PORT}`));
