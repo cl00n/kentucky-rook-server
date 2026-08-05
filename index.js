@@ -144,7 +144,7 @@ io.on('connection', socket => {
   socket.on('host', (_, cb) => {
     if (!socket.data.username) return cb?.({ ok: false, error: 'Not authenticated.' });
     const code = makeCode();
-    const player = { id: socket.id, userId: socket.data.userId, username: socket.data.username, seat: 0, ready: false };
+    const player = { id: socket.id, userId: socket.data.userId, username: socket.data.username, seat: 0, ready: false, team: 0 };
     rooms[code] = { code, host: socket.id, hostUsername: socket.data.username, players: [player], state: null, started: false };
     socket.join(code); socket.data.code = code; socket.data.seat = 0;
     cb?.({ ok: true, code, seat: 0, room: roomSummary(rooms[code]) });
@@ -161,10 +161,21 @@ io.on('connection', socket => {
     if (room.players.find(p => p.username.toLowerCase() === socket.data.username.toLowerCase()))
       return cb?.({ ok: false, error: 'You are already in this room.' });
     const seat = room.players.length;
-    room.players.push({ id: socket.id, userId: socket.data.userId, username: socket.data.username, seat, ready: false });
+    const team = seat % 2;
+    room.players.push({ id: socket.id, userId: socket.data.userId, username: socket.data.username, seat, ready: false, team });
     socket.join(code); socket.data.code = code; socket.data.seat = seat;
     cb?.({ ok: true, code, seat, room: roomSummary(room) });
     io.to(code).emit('room_update', roomSummary(room));
+  });
+
+  socket.on('team_change', ({ team }) => {
+    const room = rooms[socket.data.code];
+    if (!room) return;
+    const player = room.players.find(p => p.id === socket.id);
+    if (player) player.team = team;
+    io.to(socket.data.code).emit('team_update', {
+      teams: room.players.map(p => ({ username: p.username, seat: p.seat, team: p.team ?? 0 }))
+    });
   });
 
   socket.on('start', ({ initialState }, cb) => {
@@ -172,6 +183,15 @@ io.on('connection', socket => {
     if (!room) return cb?.({ ok: false, error: 'Room not found.' });
     if (room.host !== socket.id) return cb?.({ ok: false, error: 'Only the host can start.' });
     if (room.players.length < 2) return cb?.({ ok: false, error: 'Need at least 2 players.' });
+    // Reassign seats based on teams: team 0 → seats 0,2; team 1 → seats 1,3
+    const team0 = room.players.filter(p => (p.team ?? p.seat % 2) === 0);
+    const team1 = room.players.filter(p => (p.team ?? p.seat % 2) === 1);
+    team0.forEach((p, i) => { p.seat = i * 2; });
+    team1.forEach((p, i) => { p.seat = i * 2 + 1; });
+    room.players.forEach(p => {
+      const sock = io.sockets.sockets.get(p.id);
+      if (sock) sock.data.seat = p.seat;
+    });
     room.started = true; room.state = initialState;
     cb?.({ ok: true });
     io.to(room.code).emit('game_started', { state: initialState, players: room.players.map(p => ({ username: p.username, seat: p.seat })) });
