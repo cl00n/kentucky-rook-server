@@ -9,6 +9,7 @@ const { v4: uuidv4 } = require('uuid');
 const users = new Map();       // username.lower -> { id, username, password }
 const sessions = new Map();    // token -> { userId, remember, expiresAt }
 const stats = new Map();       // userId -> { gamesPlayed, gamesWon, bidsMade, bidsSet, tricksWon, pointsScored }
+const onlineSockets = new Map(); // userId -> socketId
 
 
 // Redis persistence — hardcoded Upstash credentials (no env var override to avoid pointing at wrong DB)
@@ -131,7 +132,10 @@ function getUserByToken(token) {
   const session = sessions.get(token);
   if (!session || session.expiresAt < Math.floor(Date.now()/1000)) return null;
   const user = [...users.values()].find(u => u.id === session.userId);
-  return user ? { id: user.id, username: user.username } : null;
+  if (!user) return null;
+  if (!user.friends) user.friends = [];
+  if (!user.pendingRequests) user.pendingRequests = [];
+  return user;
 }
 
 // ── Express ─────────────────────────────────────────────────────────────────
@@ -147,7 +151,7 @@ app.post('/auth/register', async (req, res) => {
   if (users.has(username.toLowerCase())) return res.status(409).json({ error: 'Username already taken.' });
   const hash = await bcrypt.hash(password, 10);
   const id = uuidv4();
-  users.set(username.toLowerCase(), { id, username, password: hash, avatar: null });
+  users.set(username.toLowerCase(), { id, username, password: hash, avatar: null, friends: [], pendingRequests: [] });
   ensureStats(id);
   saveDB();
   const token = createSession(id, false);
@@ -244,6 +248,74 @@ app.post('/cleanup', (req, res) => {
 
 app.get('/health', (_, res) => res.json({ ok: true, rooms: Object.keys(rooms).length, users: users.size }));
 
+// ── Friends endpoints ────────────────────────────────────────────────────────
+app.get('/friends', (req, res) => {
+  const user = getUserByToken(req.headers.authorization?.replace('Bearer ', '') || '');
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+  const friends = user.friends.map(username => {
+    const f = [...users.values()].find(u => u.username.toLowerCase() === username.toLowerCase());
+    const fStats = f ? stats.get(f.id) : null;
+    let rank = null;
+    if (f && fStats) {
+      const score = (fStats.leaderboardPoints||0) + (getAchievements(fStats).length)*10;
+      for (const r of RANKS) { if (score >= r.minPoints) rank = r; }
+    }
+    return { username: f?.username || username, online: f ? onlineSockets.has(f.id) : false, avatar: f?.avatar || null, rank };
+  });
+  res.json({ friends, pendingRequests: user.pendingRequests || [] });
+});
+
+app.post('/friends/request', (req, res) => {
+  const user = getUserByToken(req.headers.authorization?.replace('Bearer ', '') || '');
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+  const { username } = req.body || {};
+  const target = [...users.values()].find(u => u.username.toLowerCase() === username?.toLowerCase());
+  if (!target) return res.status(404).json({ error: 'User not found' });
+  if (target.id === user.id) return res.status(400).json({ error: "Can't add yourself" });
+  if (!target.pendingRequests) target.pendingRequests = [];
+  if (!user.friends) user.friends = [];
+  if (!target.friends) target.friends = [];
+  if (user.friends.map(u => u.toLowerCase()).includes(target.username.toLowerCase())) return res.status(400).json({ error: 'Already friends' });
+  if (target.pendingRequests.map(u => u.toLowerCase()).includes(user.username.toLowerCase())) return res.status(400).json({ error: 'Request already sent' });
+  target.pendingRequests.push(user.username);
+  saveDB();
+  const targetSocketId = onlineSockets.get(target.id);
+  if (targetSocketId) io.to(targetSocketId).emit('friend_request', { from: user.username });
+  res.json({ ok: true });
+});
+
+app.post('/friends/respond', (req, res) => {
+  const user = getUserByToken(req.headers.authorization?.replace('Bearer ', '') || '');
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+  const { username, accept } = req.body || {};
+  if (!user.pendingRequests) user.pendingRequests = [];
+  user.pendingRequests = user.pendingRequests.filter(u => u.toLowerCase() !== username?.toLowerCase());
+  if (accept) {
+    if (!user.friends) user.friends = [];
+    const requester = [...users.values()].find(u => u.username.toLowerCase() === username?.toLowerCase());
+    if (requester) {
+      if (!user.friends.map(u => u.toLowerCase()).includes(requester.username.toLowerCase())) user.friends.push(requester.username);
+      if (!requester.friends) requester.friends = [];
+      if (!requester.friends.map(u => u.toLowerCase()).includes(user.username.toLowerCase())) requester.friends.push(user.username);
+      const rSocketId = onlineSockets.get(requester.id);
+      if (rSocketId) io.to(rSocketId).emit('friend_accepted', { username: user.username });
+    }
+  }
+  saveDB();
+  res.json({ ok: true });
+});
+
+app.post('/friends/remove', (req, res) => {
+  const user = getUserByToken(req.headers.authorization?.replace('Bearer ', '') || '');
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+  const { username } = req.body || {};
+  if (user.friends) user.friends = user.friends.filter(u => u.toLowerCase() !== username?.toLowerCase());
+  const other = [...users.values()].find(u => u.username.toLowerCase() === username?.toLowerCase());
+  if (other?.friends) other.friends = other.friends.filter(u => u.toLowerCase() !== user.username.toLowerCase());
+  saveDB();
+  res.json({ ok: true });
+});
+
 // ── Socket.io ────────────────────────────────────────────────────────────────
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
@@ -266,7 +338,18 @@ io.on('connection', socket => {
     if (!user) return cb?.({ ok: false, error: 'Invalid session.' });
     socket.data.userId = user.id;
     socket.data.username = user.username;
+    onlineSockets.set(user.id, socket.id);
     cb?.({ ok: true, username: user.username });
+  });
+
+  socket.on('invite_friend', ({ username, roomCode }, cb) => {
+    if (!socket.data.userId) return cb?.({ ok: false });
+    const target = [...users.values()].find(u => u.username.toLowerCase() === username.toLowerCase());
+    if (!target) return cb?.({ ok: false, error: 'User not found' });
+    const targetSocketId = onlineSockets.get(target.id);
+    if (!targetSocketId) return cb?.({ ok: false, error: 'User is offline' });
+    io.to(targetSocketId).emit('game_invite', { from: socket.data.username, roomCode });
+    cb?.({ ok: true });
   });
 
   socket.on('host', (_, cb) => {
@@ -421,6 +504,7 @@ io.on('connection', socket => {
   });
 
   socket.on('disconnect', () => {
+    if (socket.data.userId) onlineSockets.delete(socket.data.userId);
     const { code, username } = socket.data;
     const room = rooms[code];
     if (!room) return;
