@@ -51,6 +51,10 @@ function ensureStats(userId) {
     gamesPlayed:0, gamesWon:0, bidsMade:0, bidsSet:0,
     tricksWon:0, pointsScored:0, currentStreak:0, bestStreak:0, lawedOff:0, consecutiveBidsMade:0,
     cpuWinsEasy:0, cpuWinsMedium:0, cpuWinsHard:0, leaderboardPoints:0,
+    hatTrickWins:0, bloodMoneyWins:0, circusActWins:0, slowBurnWins:0,
+    pointMagnetWins:0, wildCardWins:0, tidalWaveWins:0,
+    stoneWallGames:0, consecutiveGamesNotSet:0,
+    rookieOnlineWins:0, perfectGames:0, kingOfTable:false,
     perfectBids:0, shutouts:0, highBidsMade:0,
     dominatorWins:0, soloCarryHands:0, speedRunWins:0,
     bid150Made:0, bid160Made:0,
@@ -96,6 +100,21 @@ function getAchievements(s) {
   if ((s.gamblerBids || 0) >= 1) badges.push({ id: 'gambler', emoji: '🎭', name: 'Gambler', desc: 'Bid 145+ and make it' });
   if ((s.gamesWon || 0) >= 50) badges.push({ id: 'champion', emoji: '🏆', name: 'Champion', desc: 'Win 50 games' });
   if ((s.gamesWon || 0) >= 100) badges.push({ id: 'legend', emoji: '🌟', name: 'Legend', desc: 'Win 100 games' });
+  if ((s.hatTrickWins||0) >= 1) badges.push({ id: 'hat_trick', emoji: '🎩', name: 'Hat Trick', desc: 'Win 3 hands in a row in one game' });
+  if ((s.bloodMoneyWins||0) >= 1) badges.push({ id: 'blood_money', emoji: '🩸', name: 'Blood Money', desc: 'Win a hand with 150+ total trick points' });
+  if ((s.circusActWins||0) >= 1) badges.push({ id: 'circus_act', emoji: '🎪', name: 'Circus Act', desc: 'Bid 125 and score exactly 125' });
+  if ((s.slowBurnWins||0) >= 1) badges.push({ id: 'slow_burn', emoji: '🐢', name: 'Slow Burn', desc: 'Win a game lasting 10+ hands' });
+  if ((s.pointMagnetWins||0) >= 1) badges.push({ id: 'point_magnet', emoji: '🧲', name: 'Point Magnet', desc: 'Score 200+ pts in a single hand' });
+  if ((s.wildCardWins||0) >= 1) badges.push({ id: 'wild_card', emoji: '🃏', name: 'Wild Card', desc: 'Win a hand as dealer after being lawed off' });
+  if ((s.tidalWaveWins||0) >= 1) badges.push({ id: 'tidal_wave', emoji: '🌊', name: 'Tidal Wave', desc: 'Win 5 consecutive tricks in a hand' });
+  if ((s.stoneWallGames||0) >= 3) badges.push({ id: 'stone_wall', emoji: '🧱', name: 'Stone Wall', desc: 'Win 3 games without being set' });
+  if ((s.rookieOnlineWins||0) >= 1) badges.push({ id: 'rookie', emoji: '👶', name: 'Rookie', desc: 'Win your first online game' });
+  if ((s.gamesWon||0) >= 10) badges.push({ id: 'night_owl', emoji: '🌙', name: 'Night Owl', desc: 'Win 10 games total' });
+  if ((s.perfectGames||0) >= 1) badges.push({ id: 'perfect_game', emoji: '💯', name: 'Perfect Game', desc: 'Win without opponents scoring any points' });
+  if (s.kingOfTable) badges.push({ id: 'king_table', emoji: '🦁', name: 'King of the Table', desc: 'Hold the #1 leaderboard spot' });
+  const _totalScore = (s.leaderboardPoints||0) + badges.length * 10;
+  let _curRank = null; for (const r of RANKS) { if (_totalScore >= r.minPoints) _curRank = r; }
+  if (_curRank) badges.push({ id: 'graduated', emoji: '🎓', name: 'Graduated', desc: `Reached rank ${_curRank.label}` });
   if ((s.nonBidderWins || 0) >= 25) badges.push({ id: 'team_player', emoji: '🤝', name: 'Team Player', desc: 'Win 25 games as the non-bidding team' });
   if ((s.clutchRookWins || 0) >= 1) badges.push({ id: 'clutch_rook', emoji: '🔑', name: 'The Key', desc: 'Win the last trick with the Rook card' });
   if ((s.bombSquads || 0) >= 1) badges.push({ id: 'bomb_squad', emoji: '💥', name: 'Bomb Squad', desc: 'Use Rook to steal a trick worth 30+ pts' });
@@ -445,7 +464,8 @@ io.on('connection', socket => {
 
   socket.on('player_stats', ({ bidMade, bidSet, lawedOff, tricksWon, pointsScored, won,
     cpuDifficulty, perfectBid, shutout, highBidMade, dominator, soloCarry, speedRun, bid150Made, bid160Made, oneHand, quickGame,
-    rookTrickWin, cleanSweep, ghostWin, gamblerBid, nonBidderWin, clutchRook, bombSquad, comebackWin }) => {
+    rookTrickWin, cleanSweep, ghostWin, gamblerBid, nonBidderWin, clutchRook, bombSquad, comebackWin,
+    hatTrick, bloodMoney, circusAct, slowBurn, pointMagnet, wildCard, tidalWave, onlineWin, perfectGame }) => {
     if (!socket.data.userId) return;
     ensureStats(socket.data.userId);
     if (socket.data.username?.toLowerCase() === 'admin') return;
@@ -492,6 +512,19 @@ io.on('connection', socket => {
     if (clutchRook) s.clutchRookWins = (s.clutchRookWins || 0) + 1;
     if (bombSquad) s.bombSquads = (s.bombSquads || 0) + 1;
     if (comebackWin) s.comebackWins = (s.comebackWins || 0) + 1;
+    // New achievements
+    if (hatTrick) s.hatTrickWins = (s.hatTrickWins||0) + 1;
+    if (bloodMoney) s.bloodMoneyWins = (s.bloodMoneyWins||0) + 1;
+    if (circusAct) s.circusActWins = (s.circusActWins||0) + 1;
+    if (slowBurn) s.slowBurnWins = (s.slowBurnWins||0) + 1;
+    if (pointMagnet) s.pointMagnetWins = (s.pointMagnetWins||0) + 1;
+    if (wildCard) s.wildCardWins = (s.wildCardWins||0) + 1;
+    if (tidalWave) s.tidalWaveWins = (s.tidalWaveWins||0) + 1;
+    if (onlineWin) s.rookieOnlineWins = (s.rookieOnlineWins||0) + 1;
+    if (perfectGame) s.perfectGames = (s.perfectGames||0) + 1;
+    // Stone Wall: consecutive games not set
+    if (bidSet) { s.consecutiveGamesNotSet = 0; }
+    else if (won) { s.consecutiveGamesNotSet = (s.consecutiveGamesNotSet||0) + 1; if (s.consecutiveGamesNotSet >= 3) s.stoneWallGames = (s.stoneWallGames||0) + 1; }
     // Streak tracking
     if (won === true) {
       s.currentStreak = (s.currentStreak || 0) + 1;
@@ -502,6 +535,9 @@ io.on('connection', socket => {
     // Capture badges AFTER updating
     const badgesAfter = getAchievements(s);
     const newlyUnlocked = badgesAfter.filter(a => !badgesBefore.has(a.id));
+    // King of the Table: check if user is #1
+    const allRankScores = [...stats.entries()].map(([uid, st]) => ({ uid, score: st.leaderboardPoints||0 })).sort((a,b) => b.score - a.score);
+    if (allRankScores[0]?.uid === socket.data.userId) { s.kingOfTable = true; } else { s.kingOfTable = false; }
     saveDB();
     // Emit newly unlocked achievements back to this socket
     if (newlyUnlocked.length > 0) {
