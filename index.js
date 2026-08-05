@@ -62,12 +62,18 @@ async function saveDB() {
 }
 
 function ensureStats(userId) {
-  if (!stats.has(userId)) stats.set(userId, { gamesPlayed:0, gamesWon:0, bidsMade:0, bidsSet:0,
-    tricksWon:0, pointsScored:0, currentStreak:0, bestStreak:0, lawedOff:0, consecutiveBidsMade:0 });
+  if (!stats.has(userId)) stats.set(userId, {
+    gamesPlayed:0, gamesWon:0, bidsMade:0, bidsSet:0,
+    tricksWon:0, pointsScored:0, currentStreak:0, bestStreak:0, lawedOff:0, consecutiveBidsMade:0,
+    cpuWinsEasy:0, cpuWinsMedium:0, cpuWinsHard:0,
+    perfectBids:0, shutouts:0, highBidsMade:0,
+    dominatorWins:0, soloCarryHands:0, speedRunWins:0,
+  });
 }
 
 function getAchievements(s) {
   const badges = [];
+  // General
   if ((s.gamesWon || 0) >= 1) badges.push({ id: 'first_win', emoji: '🎉', name: 'First Win' });
   if ((s.gamesWon || 0) >= 10) badges.push({ id: 'veteran', emoji: '🏅', name: 'Veteran' });
   if ((s.gamesWon || 0) >= 25) badges.push({ id: 'rook_master', emoji: '👑', name: 'Rook Master' });
@@ -80,6 +86,18 @@ function getAchievements(s) {
     const pct = Math.round(100 * (s.bidsMade || 0) / ((s.bidsMade || 0) + (s.bidsSet || 0)));
     if (pct >= 80) badges.push({ id: 'clutch', emoji: '💎', name: 'Clutch Bidder' });
   }
+  // CPU / practice
+  const cpuTotal = (s.cpuWinsEasy||0) + (s.cpuWinsMedium||0) + (s.cpuWinsHard||0);
+  if (cpuTotal >= 1) badges.push({ id: 'first_blood', emoji: '🤖', name: 'First Blood' });
+  if ((s.cpuWinsEasy || 0) >= 5) badges.push({ id: 'easy_pickings', emoji: '😤', name: 'Easy Pickings' });
+  if ((s.cpuWinsMedium || 0) >= 5) badges.push({ id: 'worthy_opponent', emoji: '💪', name: 'Worthy Opponent' });
+  if ((s.cpuWinsHard || 0) >= 5) badges.push({ id: 'big_brain', emoji: '🧠', name: 'Big Brain' });
+  if ((s.dominatorWins || 0) >= 1) badges.push({ id: 'dominator', emoji: '👊', name: 'Dominator' });
+  if ((s.perfectBids || 0) >= 1) badges.push({ id: 'perfect_bid', emoji: '🎯', name: 'Perfect Bid' });
+  if ((s.soloCarryHands || 0) >= 1) badges.push({ id: 'solo_carry', emoji: '🃏', name: 'Solo Carry' });
+  if ((s.speedRunWins || 0) >= 1) badges.push({ id: 'speed_runner', emoji: '🏃', name: 'Speed Runner' });
+  if ((s.shutouts || 0) >= 1) badges.push({ id: 'shut_out', emoji: '🔇', name: 'Shut Out' });
+  if ((s.highBidsMade || 0) >= 1) badges.push({ id: 'showoff', emoji: '🎪', name: 'Showoff' });
   return badges;
 }
 
@@ -152,6 +170,15 @@ app.get('/leaderboard', (_, res) => {
       currentStreak: s.currentStreak || 0,
       bestStreak: s.bestStreak || 0,
       lawedOff: s.lawedOff || 0,
+      cpuWinsEasy: s.cpuWinsEasy || 0,
+      cpuWinsMedium: s.cpuWinsMedium || 0,
+      cpuWinsHard: s.cpuWinsHard || 0,
+      perfectBids: s.perfectBids || 0,
+      shutouts: s.shutouts || 0,
+      highBidsMade: s.highBidsMade || 0,
+      dominatorWins: s.dominatorWins || 0,
+      soloCarryHands: s.soloCarryHands || 0,
+      speedRunWins: s.speedRunWins || 0,
       achievements: getAchievements(s),
     };
   }).filter(Boolean).sort((a, b) => b.gamesWon - a.gamesWon || b.winPct - a.winPct).slice(0, 50);
@@ -286,7 +313,8 @@ io.on('connection', socket => {
     });
   });
 
-  socket.on('player_stats', ({ bidMade, bidSet, lawedOff, tricksWon, pointsScored, won }) => {
+  socket.on('player_stats', ({ bidMade, bidSet, lawedOff, tricksWon, pointsScored, won,
+    cpuDifficulty, perfectBid, shutout, highBidMade, dominator, soloCarry, speedRun }) => {
     if (!socket.data.userId) return;
     ensureStats(socket.data.userId);
     const s = stats.get(socket.data.userId);
@@ -295,6 +323,18 @@ io.on('connection', socket => {
     if (lawedOff) s.lawedOff = (s.lawedOff || 0) + 1;
     s.tricksWon += tricksWon || 0;
     s.pointsScored += pointsScored || 0;
+    // CPU difficulty wins
+    if (won === true && cpuDifficulty === 'easy') s.cpuWinsEasy = (s.cpuWinsEasy || 0) + 1;
+    if (won === true && cpuDifficulty === 'medium') s.cpuWinsMedium = (s.cpuWinsMedium || 0) + 1;
+    if (won === true && cpuDifficulty === 'hard') s.cpuWinsHard = (s.cpuWinsHard || 0) + 1;
+    // Special game feats
+    if (perfectBid) s.perfectBids = (s.perfectBids || 0) + 1;
+    if (shutout) s.shutouts = (s.shutouts || 0) + 1;
+    if (highBidMade) s.highBidsMade = (s.highBidsMade || 0) + 1;
+    if (dominator) s.dominatorWins = (s.dominatorWins || 0) + 1;
+    if (soloCarry) s.soloCarryHands = (s.soloCarryHands || 0) + 1;
+    if (speedRun) s.speedRunWins = (s.speedRunWins || 0) + 1;
+    // Streak tracking
     if (won === true) {
       s.currentStreak = (s.currentStreak || 0) + 1;
       s.bestStreak = Math.max(s.bestStreak || 0, s.currentStreak);
