@@ -68,73 +68,73 @@ function ensureStats(userId) {
 function getAchievements(s) {
   const badges = [];
   // General
-  if ((s.gamesWon || 0) >= 1) badges.push({ id: 'first_win', emoji: '🎉', name: 'First Win', desc: 'Win your first game' });
-  if ((s.gamesWon || 0) >= 10) badges.push({ id: 'veteran', emoji: '🏅', name: 'Veteran', desc: 'Win 10 games' });
-  if ((s.gamesWon || 0) >= 25) badges.push({ id: 'rook_master', emoji: '👑', name: 'Rook Master', desc: 'Win 25 games' });
-  if ((s.currentStreak || 0) >= 3) badges.push({ id: 'on_fire', emoji: '🔥', name: 'On Fire', desc: '3 win streak' });
-  if ((s.bestStreak || 0) >= 5) badges.push({ id: 'unstoppable', emoji: '⚡', name: 'Unstoppable', desc: '5 win streak' });
-  if ((s.consecutiveBidsMade || 0) >= 10) badges.push({ id: 'sharpshooter', emoji: '🎯', name: 'Sharpshooter', desc: 'Make 10 bids in a row' });
-  if ((s.tricksWon || 0) >= 100) badges.push({ id: 'card_shark', emoji: '🃏', name: 'Card Shark', desc: 'Win 100 tricks' });
-  if ((s.lawedOff || 0) >= 5) badges.push({ id: 'lawed_off', emoji: '💀', name: 'Lawed Off', desc: 'Get lawed off 5 times' });
+  if ((s.gamesWon || 0) >= 1) badges.push({ id: 'first_win', emoji: '🎉', name: 'First Win', desc: 'Win your first game' , xp: 5});
+  if ((s.gamesWon || 0) >= 10) badges.push({ id: 'veteran', emoji: '🏅', name: 'Veteran', desc: 'Win 10 games' , xp: 10});
+  if ((s.gamesWon || 0) >= 25) badges.push({ id: 'rook_master', emoji: '👑', name: 'Rook Master', desc: 'Win 25 games' , xp: 25});
+  if ((s.currentStreak || 0) >= 3) badges.push({ id: 'on_fire', emoji: '🔥', name: 'On Fire', desc: '3 win streak' , xp: 10});
+  if ((s.bestStreak || 0) >= 5) badges.push({ id: 'unstoppable', emoji: '⚡', name: 'Unstoppable', desc: '5 win streak' , xp: 20});
+  if ((s.consecutiveBidsMade || 0) >= 10) badges.push({ id: 'sharpshooter', emoji: '🎯', name: 'Sharpshooter', desc: 'Make 10 bids in a row' , xp: 15});
+  if ((s.tricksWon || 0) >= 100) badges.push({ id: 'card_shark', emoji: '🃏', name: 'Card Shark', desc: 'Win 100 tricks' , xp: 15});
+  if ((s.lawedOff || 0) >= 5) badges.push({ id: 'lawed_off', emoji: '💀', name: 'Lawed Off', desc: 'Get lawed off 5 times' , xp: 8});
   if ((s.bidsMade || 0) + (s.bidsSet || 0) >= 10) {
     const pct = Math.round(100 * (s.bidsMade || 0) / ((s.bidsMade || 0) + (s.bidsSet || 0)));
-    if (pct >= 80) badges.push({ id: 'clutch', emoji: '💎', name: 'Clutch Bidder', desc: '80%+ bid success rate' });
+    if (pct >= 80) badges.push({ id: 'clutch', emoji: '💎', name: 'Clutch Bidder', desc: '80%+ bid success rate' , xp: 25});
   }
   // CPU / practice
   const cpuTotal = (s.cpuWinsEasy||0) + (s.cpuWinsMedium||0) + (s.cpuWinsHard||0);
-  if (cpuTotal >= 1) badges.push({ id: 'first_blood', emoji: '🤖', name: 'First Blood', desc: 'Beat the CPU at least once' });
-  if ((s.cpuWinsEasy || 0) >= 5) badges.push({ id: 'easy_pickings', emoji: '😤', name: 'Easy Pickings', desc: 'Win 5 games on Easy' });
-  if ((s.cpuWinsMedium || 0) >= 5) badges.push({ id: 'worthy_opponent', emoji: '💪', name: 'Worthy Opponent', desc: 'Win 5 games on Medium' });
-  if ((s.cpuWinsHard || 0) >= 5) badges.push({ id: 'big_brain', emoji: '🧠', name: 'Big Brain', desc: 'Win 5 games on Hard' });
-  if ((s.dominatorWins || 0) >= 1) badges.push({ id: 'dominator', emoji: '👊', name: 'Dominator', desc: 'Beat Hard CPU holding them under 100 pts' });
-  if ((s.perfectBids || 0) >= 1) badges.push({ id: 'perfect_bid', emoji: '🎯', name: 'Perfect Bid', desc: 'Make your bid exactly' });
-  if ((s.soloCarryHands || 0) >= 1) badges.push({ id: 'solo_carry', emoji: '🃏', name: 'Solo Carry', desc: 'Score 140+ pts in a single hand' });
-  if ((s.speedRunWins || 0) >= 1) badges.push({ id: 'speed_runner', emoji: '🏃', name: 'Speed Runner', desc: 'Win a game in 5 hands or less' });
-  if ((s.shutouts || 0) >= 1) badges.push({ id: 'shut_out', emoji: '🔇', name: 'Shut Out', desc: 'Hold opponents to 0 pts in a hand' });
-  if ((s.highBidsMade || 0) >= 1) badges.push({ id: 'showoff', emoji: '🎪', name: 'Showoff', desc: 'Bid 170+ and make it' });
-  if ((s.bid150Made || 0) >= 1) badges.push({ id: 'bid_150', emoji: '🔥', name: 'Heat Check', desc: 'Bid 150 and make it' });
-  if ((s.bid160Made || 0) >= 1) badges.push({ id: 'bid_160', emoji: '💰', name: 'High Roller', desc: 'Bid 160 and make it' });
+  if (cpuTotal >= 1) badges.push({ id: 'first_blood', emoji: '🤖', name: 'First Blood', desc: 'Beat the CPU at least once' , xp: 5});
+  if ((s.cpuWinsEasy || 0) >= 5) badges.push({ id: 'easy_pickings', emoji: '😤', name: 'Easy Pickings', desc: 'Win 5 games on Easy' , xp: 10});
+  if ((s.cpuWinsMedium || 0) >= 5) badges.push({ id: 'worthy_opponent', emoji: '💪', name: 'Worthy Opponent', desc: 'Win 5 games on Medium' , xp: 15});
+  if ((s.cpuWinsHard || 0) >= 5) badges.push({ id: 'big_brain', emoji: '🧠', name: 'Big Brain', desc: 'Win 5 games on Hard' , xp: 25});
+  if ((s.dominatorWins || 0) >= 1) badges.push({ id: 'dominator', emoji: '👊', name: 'Dominator', desc: 'Beat Hard CPU holding them under 100 pts' , xp: 30});
+  if ((s.perfectBids || 0) >= 1) badges.push({ id: 'perfect_bid', emoji: '🎯', name: 'Perfect Bid', desc: 'Make your bid exactly' , xp: 8});
+  if ((s.soloCarryHands || 0) >= 1) badges.push({ id: 'solo_carry', emoji: '🃏', name: 'Solo Carry', desc: 'Score 140+ pts in a single hand' , xp: 20});
+  if ((s.speedRunWins || 0) >= 1) badges.push({ id: 'speed_runner', emoji: '🏃', name: 'Speed Runner', desc: 'Win a game in 5 hands or less' , xp: 15});
+  if ((s.shutouts || 0) >= 1) badges.push({ id: 'shut_out', emoji: '🔇', name: 'Shut Out', desc: 'Hold opponents to 0 pts in a hand' , xp: 20});
+  if ((s.highBidsMade || 0) >= 1) badges.push({ id: 'showoff', emoji: '🎪', name: 'Showoff', desc: 'Bid 170+ and make it' , xp: 25});
+  if ((s.bid150Made || 0) >= 1) badges.push({ id: 'bid_150', emoji: '🔥', name: 'Heat Check', desc: 'Bid 150 and make it' , xp: 15});
+  if ((s.bid160Made || 0) >= 1) badges.push({ id: 'bid_160', emoji: '💰', name: 'High Roller', desc: 'Bid 160 and make it' , xp: 20});
   // New achievements
-  if ((s.rookTrickWins || 0) >= 1) badges.push({ id: 'bird_catcher', emoji: '🦅', name: 'Bird Catcher', desc: 'Win a trick with the Rook card' });
-  if ((s.cleanSweeps || 0) >= 1) badges.push({ id: 'clean_sweep', emoji: '🌪️', name: 'Clean Sweep', desc: 'Win every trick in a hand' });
-  if ((s.ghostWins || 0) >= 1) badges.push({ id: 'ghost', emoji: '👻', name: 'Ghost', desc: 'Win a game without ever bidding' });
-  if ((s.consecutiveBidsMade || 0) >= 3) badges.push({ id: 'ice_cold', emoji: '🧊', name: 'Ice Cold', desc: 'Make 3 bids in a row without being set' });
-  if ((s.gamblerBids || 0) >= 1) badges.push({ id: 'gambler', emoji: '🎭', name: 'Gambler', desc: 'Bid 145+ and make it' });
-  if ((s.gamesWon || 0) >= 50) badges.push({ id: 'champion', emoji: '🏆', name: 'Champion', desc: 'Win 50 games' });
-  if ((s.gamesWon || 0) >= 100) badges.push({ id: 'legend', emoji: '🌟', name: 'Legend', desc: 'Win 100 games' });
-  if ((s.hatTrickWins||0) >= 1) badges.push({ id: 'hat_trick', emoji: '🎩', name: 'Hat Trick', desc: 'Win 3 hands in a row in one game' });
-  if ((s.bloodMoneyWins||0) >= 1) badges.push({ id: 'blood_money', emoji: '🩸', name: 'Blood Money', desc: 'Win a hand with 150+ total trick points' });
-  if ((s.circusActWins||0) >= 1) badges.push({ id: 'circus_act', emoji: '🎪', name: 'Circus Act', desc: 'Bid 125 and score exactly 125' });
-  if ((s.slowBurnWins||0) >= 1) badges.push({ id: 'slow_burn', emoji: '🐢', name: 'Slow Burn', desc: 'Win a game lasting 10+ hands' });
-  if ((s.pointMagnetWins||0) >= 1) badges.push({ id: 'point_magnet', emoji: '🧲', name: 'Point Magnet', desc: 'Score 200+ pts in a single hand' });
-  if ((s.wildCardWins||0) >= 1) badges.push({ id: 'wild_card', emoji: '🃏', name: 'Wild Card', desc: 'Win a hand as dealer after being lawed off' });
-  if ((s.tidalWaveWins||0) >= 1) badges.push({ id: 'tidal_wave', emoji: '🌊', name: 'Tidal Wave', desc: 'Win 5 consecutive tricks in a hand' });
-  if ((s.stoneWallGames||0) >= 3) badges.push({ id: 'stone_wall', emoji: '🧱', name: 'Stone Wall', desc: 'Win 3 games without being set' });
-  if ((s.rookieOnlineWins||0) >= 1) badges.push({ id: 'rookie', emoji: '👶', name: 'Rookie', desc: 'Win your first online game' });
-  if ((s.gamesWon||0) >= 10) badges.push({ id: 'night_owl', emoji: '🌙', name: 'Night Owl', desc: 'Win 10 games total' });
-  if ((s.perfectGames||0) >= 1) badges.push({ id: 'perfect_game', emoji: '💯', name: 'Perfect Game', desc: 'Win without opponents scoring any points' });
-  if (s.kingOfTable) badges.push({ id: 'king_table', emoji: '🦁', name: 'King of the Table', desc: 'Hold the #1 leaderboard spot' });
+  if ((s.rookTrickWins || 0) >= 1) badges.push({ id: 'bird_catcher', emoji: '🦅', name: 'Bird Catcher', desc: 'Win a trick with the Rook card' , xp: 10});
+  if ((s.cleanSweeps || 0) >= 1) badges.push({ id: 'clean_sweep', emoji: '🌪️', name: 'Clean Sweep', desc: 'Win every trick in a hand' , xp: 30});
+  if ((s.ghostWins || 0) >= 1) badges.push({ id: 'ghost', emoji: '👻', name: 'Ghost', desc: 'Win a game without ever bidding' , xp: 25});
+  if ((s.consecutiveBidsMade || 0) >= 3) badges.push({ id: 'ice_cold', emoji: '🧊', name: 'Ice Cold', desc: 'Make 3 bids in a row without being set' , xp: 15});
+  if ((s.gamblerBids || 0) >= 1) badges.push({ id: 'gambler', emoji: '🎭', name: 'Gambler', desc: 'Bid 145+ and make it' , xp: 20});
+  if ((s.gamesWon || 0) >= 50) badges.push({ id: 'champion', emoji: '🏆', name: 'Champion', desc: 'Win 50 games' , xp: 40});
+  if ((s.gamesWon || 0) >= 100) badges.push({ id: 'legend', emoji: '🌟', name: 'Legend', desc: 'Win 100 games' , xp: 50});
+  if ((s.hatTrickWins||0) >= 1) badges.push({ id: 'hat_trick', emoji: '🎩', name: 'Hat Trick', desc: 'Win 3 hands in a row in one game' , xp: 20});
+  if ((s.bloodMoneyWins||0) >= 1) badges.push({ id: 'blood_money', emoji: '🩸', name: 'Blood Money', desc: 'Win a hand with 150+ total trick points' , xp: 15});
+  if ((s.circusActWins||0) >= 1) badges.push({ id: 'circus_act', emoji: '🎪', name: 'Circus Act', desc: 'Bid 125 and score exactly 125' , xp: 20});
+  if ((s.slowBurnWins||0) >= 1) badges.push({ id: 'slow_burn', emoji: '🐢', name: 'Slow Burn', desc: 'Win a game lasting 10+ hands' , xp: 20});
+  if ((s.pointMagnetWins||0) >= 1) badges.push({ id: 'point_magnet', emoji: '🧲', name: 'Point Magnet', desc: 'Score 200+ pts in a single hand' , xp: 25});
+  if ((s.wildCardWins||0) >= 1) badges.push({ id: 'wild_card', emoji: '🃏', name: 'Wild Card', desc: 'Win a hand as dealer after being lawed off' , xp: 20});
+  if ((s.tidalWaveWins||0) >= 1) badges.push({ id: 'tidal_wave', emoji: '🌊', name: 'Tidal Wave', desc: 'Win 5 consecutive tricks in a hand' , xp: 25});
+  if ((s.stoneWallGames||0) >= 3) badges.push({ id: 'stone_wall', emoji: '🧱', name: 'Stone Wall', desc: 'Win 3 games without being set' , xp: 30});
+  if ((s.rookieOnlineWins||0) >= 1) badges.push({ id: 'rookie', emoji: '👶', name: 'Rookie', desc: 'Win your first online game' , xp: 5});
+  if ((s.gamesWon||0) >= 10) badges.push({ id: 'night_owl', emoji: '🌙', name: 'Night Owl', desc: 'Win 10 games total' , xp: 10});
+  if ((s.perfectGames||0) >= 1) badges.push({ id: 'perfect_game', emoji: '💯', name: 'Perfect Game', desc: 'Win without opponents scoring any points' , xp: 40});
+  if (s.kingOfTable) badges.push({ id: 'king_table', emoji: '🦁', name: 'King of the Table', desc: 'Hold the #1 leaderboard spot' , xp: 40});
   const _totalScore = (s.leaderboardPoints||0) + badges.length * 10;
   let _curRank = null; for (const r of RANKS) { if (_totalScore >= r.minPoints) _curRank = r; }
-  if (_curRank) badges.push({ id: 'graduated', emoji: '🎓', name: 'Graduated', desc: `Reached rank ${_curRank.label}` });
-  if ((s.nonBidderWins || 0) >= 25) badges.push({ id: 'team_player', emoji: '🤝', name: 'Team Player', desc: 'Win 25 games as the non-bidding team' });
-  if ((s.clutchRookWins || 0) >= 1) badges.push({ id: 'clutch_rook', emoji: '🔑', name: 'The Key', desc: 'Win the last trick with the Rook card' });
-  if ((s.bombSquads || 0) >= 1) badges.push({ id: 'bomb_squad', emoji: '💥', name: 'Bomb Squad', desc: 'Use Rook to steal a trick worth 30+ pts' });
-  if ((s.comebackWins || 0) >= 1) badges.push({ id: 'comeback_kid', emoji: '📈', name: 'Comeback Kid', desc: 'Win while trailing by 30+ pts' });
+  if (_curRank) badges.push({ id: 'graduated', emoji: '🎓', name: 'Graduated', desc: `Reached rank ${_curRank.label}`, xp: 10 });
+  if ((s.nonBidderWins || 0) >= 25) badges.push({ id: 'team_player', emoji: '🤝', name: 'Team Player', desc: 'Win 25 games as the non-bidding team' , xp: 25});
+  if ((s.clutchRookWins || 0) >= 1) badges.push({ id: 'clutch_rook', emoji: '🔑', name: 'The Key', desc: 'Win the last trick with the Rook card' , xp: 20});
+  if ((s.bombSquads || 0) >= 1) badges.push({ id: 'bomb_squad', emoji: '💥', name: 'Bomb Squad', desc: 'Use Rook to steal a trick worth 30+ pts' , xp: 25});
+  if ((s.comebackWins || 0) >= 1) badges.push({ id: 'comeback_kid', emoji: '📈', name: 'Comeback Kid', desc: 'Win while trailing by 30+ pts' , xp: 20});
   // Mode-specific achievements
-  if ((s.classicWins||0) >= 5) badges.push({ id: 'marathon_man', emoji: '🏰', name: 'Marathon Man', desc: 'Win 5 Classic games' });
-  if ((s.classicWins||0) >= 25) badges.push({ id: 'classic_champ', emoji: '👑', name: 'Classic Champion', desc: 'Win 25 Classic games' });
-  if ((s.warOfAttritionWins||0) >= 1) badges.push({ id: 'war_attrition', emoji: '⚔️', name: 'War of Attrition', desc: 'Win a Classic game lasting 15+ hands' });
-  if ((s.fiveHundredWins||0) >= 1) badges.push({ id: 'five_hundred', emoji: '💪', name: '500 Club', desc: 'Win a Classic game with 500+ points' });
-  if ((s.quickWins||0) >= 5) badges.push({ id: 'quick_draw', emoji: '⚡', name: 'Quick Draw', desc: 'Win 5 Quick Games' });
-  if ((s.quickWins||0) >= 30) badges.push({ id: 'quick_thirty', emoji: '🔁', name: 'Quick Thirty', desc: 'Win 30 Quick Games' });
-  if ((s.speedsterWins||0) >= 1) badges.push({ id: 'speedster', emoji: '🏎️', name: 'Speedster', desc: 'Win a Quick Game in 3 hands or less' });
-  if ((s.oneHandWins||0) >= 1) badges.push({ id: 'one_shot', emoji: '☝️', name: 'One Shot', desc: 'Win your first One Hand game' });
-  if ((s.oneHandWins||0) >= 5) badges.push({ id: 'one_and_done', emoji: '🃏', name: 'One and Done', desc: 'Win 5 One Hand games' });
-  if ((s.oneHandWins||0) >= 25) badges.push({ id: 'high_stakes', emoji: '🎰', name: 'High Stakes', desc: 'Win 25 One Hand games' });
-  if ((s.allInWins||0) >= 1) badges.push({ id: 'all_in', emoji: '💣', name: 'All In', desc: 'Win a One Hand game with 180+ pts' });
+  if ((s.classicWins||0) >= 5) badges.push({ id: 'marathon_man', emoji: '🏰', name: 'Marathon Man', desc: 'Win 5 Classic games' , xp: 15});
+  if ((s.classicWins||0) >= 25) badges.push({ id: 'classic_champ', emoji: '👑', name: 'Classic Champion', desc: 'Win 25 Classic games' , xp: 35});
+  if ((s.warOfAttritionWins||0) >= 1) badges.push({ id: 'war_attrition', emoji: '⚔️', name: 'War of Attrition', desc: 'Win a Classic game lasting 15+ hands' , xp: 25});
+  if ((s.fiveHundredWins||0) >= 1) badges.push({ id: 'five_hundred', emoji: '💪', name: '500 Club', desc: 'Win a Classic game with 500+ points' , xp: 20});
+  if ((s.quickWins||0) >= 5) badges.push({ id: 'quick_draw', emoji: '⚡', name: 'Quick Draw', desc: 'Win 5 Quick Games' , xp: 10});
+  if ((s.quickWins||0) >= 30) badges.push({ id: 'quick_thirty', emoji: '🔁', name: 'Quick Thirty', desc: 'Win 30 Quick Games' , xp: 30});
+  if ((s.speedsterWins||0) >= 1) badges.push({ id: 'speedster', emoji: '🏎️', name: 'Speedster', desc: 'Win a Quick Game in 3 hands or less' , xp: 15});
+  if ((s.oneHandWins||0) >= 1) badges.push({ id: 'one_shot', emoji: '☝️', name: 'One Shot', desc: 'Win your first One Hand game' , xp: 5});
+  if ((s.oneHandWins||0) >= 5) badges.push({ id: 'one_and_done', emoji: '🃏', name: 'One and Done', desc: 'Win 5 One Hand games' , xp: 10});
+  if ((s.oneHandWins||0) >= 25) badges.push({ id: 'high_stakes', emoji: '🎰', name: 'High Stakes', desc: 'Win 25 One Hand games' , xp: 30});
+  if ((s.allInWins||0) >= 1) badges.push({ id: 'all_in', emoji: '💣', name: 'All In', desc: 'Win a One Hand game with 180+ pts' , xp: 20});
   const badgeCount = badges.length;
-  if (badgeCount >= 10) badges.push({ id: 'decorated', emoji: '🎖️', name: 'Decorated', desc: 'Earn 10 achievements' });
+  if (badgeCount >= 10) badges.push({ id: 'decorated', emoji: '🎖️', name: 'Decorated', desc: 'Earn 10 achievements' , xp: 30});
   return badges;
 }
 
@@ -157,7 +157,7 @@ const RANKS = [
 ];
 
 function getPlayerRank(leaderboardPoints, achievementCount) {
-  const score = (leaderboardPoints || 0) + (achievementCount || 0) * 10;
+  const score = (leaderboardPoints || 0); // XP now directly awarded per achievement
   let rank = null;
   for (const r of RANKS) { if (score >= r.minPoints) rank = r; }
   return rank; // null = unranked
@@ -582,6 +582,11 @@ io.on('connection', socket => {
     // King of the Table: check if user is #1
     const allRankScores = [...stats.entries()].map(([uid, st]) => ({ uid, score: st.leaderboardPoints||0 })).sort((a,b) => b.score - a.score);
     if (allRankScores[0]?.uid === socket.data.userId) { s.kingOfTable = true; } else { s.kingOfTable = false; }
+    // Award XP for newly unlocked achievements
+    if (newlyUnlocked.length > 0) {
+      const bonusXP = newlyUnlocked.reduce((sum, a) => sum + (a.xp || 10), 0);
+      s.leaderboardPoints = (s.leaderboardPoints || 0) + bonusXP;
+    }
     saveDB();
     // Emit newly unlocked achievements back to this socket
     if (newlyUnlocked.length > 0) {
