@@ -53,6 +53,8 @@ function ensureStats(userId) {
     perfectBids:0, shutouts:0, highBidsMade:0,
     dominatorWins:0, soloCarryHands:0, speedRunWins:0,
     bid150Made:0, bid160Made:0,
+    rookTrickWins:0, cleanSweeps:0, ghostWins:0, gamblerBids:0,
+    nonBidderWins:0, clutchRookWins:0, bombSquads:0, comebackWins:0,
   });
 }
 
@@ -85,6 +87,20 @@ function getAchievements(s) {
   if ((s.highBidsMade || 0) >= 1) badges.push({ id: 'showoff', emoji: '🎪', name: 'Showoff' });
   if ((s.bid150Made || 0) >= 1) badges.push({ id: 'bid_150', emoji: '🔥', name: 'Heat Check' });
   if ((s.bid160Made || 0) >= 1) badges.push({ id: 'bid_160', emoji: '💰', name: 'High Roller' });
+  // New achievements
+  if ((s.rookTrickWins || 0) >= 1) badges.push({ id: 'bird_catcher', emoji: '🦅', name: 'Bird Catcher' });
+  if ((s.cleanSweeps || 0) >= 1) badges.push({ id: 'clean_sweep', emoji: '🌪️', name: 'Clean Sweep' });
+  if ((s.ghostWins || 0) >= 1) badges.push({ id: 'ghost', emoji: '👻', name: 'Ghost' });
+  if ((s.consecutiveBidsMade || 0) >= 3) badges.push({ id: 'ice_cold', emoji: '🧊', name: 'Ice Cold' });
+  if ((s.gamblerBids || 0) >= 1) badges.push({ id: 'gambler', emoji: '🎭', name: 'Gambler' });
+  if ((s.gamesWon || 0) >= 50) badges.push({ id: 'champion', emoji: '🏆', name: 'Champion' });
+  if ((s.gamesWon || 0) >= 100) badges.push({ id: 'legend', emoji: '🌟', name: 'Legend' });
+  if ((s.nonBidderWins || 0) >= 25) badges.push({ id: 'team_player', emoji: '🤝', name: 'Team Player' });
+  if ((s.clutchRookWins || 0) >= 1) badges.push({ id: 'clutch_rook', emoji: '🔑', name: 'The Key' });
+  if ((s.bombSquads || 0) >= 1) badges.push({ id: 'bomb_squad', emoji: '💥', name: 'Bomb Squad' });
+  if ((s.comebackWins || 0) >= 1) badges.push({ id: 'comeback_kid', emoji: '📈', name: 'Comeback Kid' });
+  const badgeCount = badges.length;
+  if (badgeCount >= 10) badges.push({ id: 'decorated', emoji: '🎖️', name: 'Decorated' });
   return badges;
 }
 
@@ -321,7 +337,8 @@ io.on('connection', socket => {
   });
 
   socket.on('player_stats', ({ bidMade, bidSet, lawedOff, tricksWon, pointsScored, won,
-    cpuDifficulty, perfectBid, shutout, highBidMade, dominator, soloCarry, speedRun, bid150Made, bid160Made, oneHand, quickGame }) => {
+    cpuDifficulty, perfectBid, shutout, highBidMade, dominator, soloCarry, speedRun, bid150Made, bid160Made, oneHand, quickGame,
+    rookTrickWin, cleanSweep, ghostWin, gamblerBid, nonBidderWin, clutchRook, bombSquad, comebackWin }) => {
     if (!socket.data.userId) return;
     ensureStats(socket.data.userId);
     const s = stats.get(socket.data.userId);
@@ -359,6 +376,14 @@ io.on('connection', socket => {
     if (dominator) s.dominatorWins = (s.dominatorWins || 0) + 1;
     if (soloCarry) s.soloCarryHands = (s.soloCarryHands || 0) + 1;
     if (speedRun) s.speedRunWins = (s.speedRunWins || 0) + 1;
+    if (rookTrickWin) s.rookTrickWins = (s.rookTrickWins || 0) + 1;
+    if (cleanSweep) s.cleanSweeps = (s.cleanSweeps || 0) + 1;
+    if (ghostWin) s.ghostWins = (s.ghostWins || 0) + 1;
+    if (gamblerBid) s.gamblerBids = (s.gamblerBids || 0) + 1;
+    if (nonBidderWin) s.nonBidderWins = (s.nonBidderWins || 0) + 1;
+    if (clutchRook) s.clutchRookWins = (s.clutchRookWins || 0) + 1;
+    if (bombSquad) s.bombSquads = (s.bombSquads || 0) + 1;
+    if (comebackWin) s.comebackWins = (s.comebackWins || 0) + 1;
     // Streak tracking
     if (won === true) {
       s.currentStreak = (s.currentStreak || 0) + 1;
