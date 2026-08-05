@@ -146,7 +146,7 @@ io.on('connection', socket => {
     const code = makeCode();
     const player = { id: socket.id, userId: socket.data.userId, username: socket.data.username, seat: 0, ready: false };
     rooms[code] = { code, host: socket.id, hostUsername: socket.data.username, players: [player], state: null, started: false };
-    socket.join(code); socket.data.code = code;
+    socket.join(code); socket.data.code = code; socket.data.seat = 0;
     cb?.({ ok: true, code, seat: 0, room: roomSummary(rooms[code]) });
     io.to(code).emit('room_update', roomSummary(rooms[code]));
   });
@@ -162,7 +162,7 @@ io.on('connection', socket => {
       return cb?.({ ok: false, error: 'You are already in this room.' });
     const seat = room.players.length;
     room.players.push({ id: socket.id, userId: socket.data.userId, username: socket.data.username, seat, ready: false });
-    socket.join(code); socket.data.code = code;
+    socket.join(code); socket.data.code = code; socket.data.seat = seat;
     cb?.({ ok: true, code, seat, room: roomSummary(room) });
     io.to(code).emit('room_update', roomSummary(room));
   });
@@ -180,7 +180,7 @@ io.on('connection', socket => {
   socket.on('action', ({ type, payload }) => {
     const room = rooms[socket.data.code];
     if (!room?.started) return;
-    socket.to(room.code).emit('action', { type, payload, seat: socket.data.seat, username: socket.data.username });
+    socket.to(room.code).emit('action', { type, payload, username: socket.data.username });
   });
 
   socket.on('sync_state', ({ state }) => {
