@@ -48,9 +48,11 @@ async function loadDB() {
   try {
     const usersJson = await redisCmd(['GET', 'rook:users']);
     const statsJson = await redisCmd(['GET', 'rook:stats']);
+    const sessionsJson = await redisCmd(['GET', 'rook:sessions']);
     if (usersJson) JSON.parse(usersJson).forEach(([k,v]) => users.set(k, v));
     if (statsJson) JSON.parse(statsJson).forEach(([k,v]) => stats.set(k, v));
-    console.log(`Loaded ${users.size} users from Redis`);
+    if (sessionsJson) JSON.parse(sessionsJson).forEach(([k,v]) => sessions.set(k, v));
+    console.log(`Loaded ${users.size} users, ${sessions.size} sessions from Redis`);
   } catch(e) { console.warn('Could not load from Redis:', e.message); }
 }
 
@@ -58,6 +60,7 @@ async function saveDB() {
   try {
     await redisCmd(['SET', 'rook:users', JSON.stringify([...users.entries()])]);
     await redisCmd(['SET', 'rook:stats', JSON.stringify([...stats.entries()])]);
+    await redisCmd(['SET', 'rook:sessions', JSON.stringify([...sessions.entries()])]);
   } catch(e) { console.warn('Could not save to Redis:', e.message); }
 }
 
