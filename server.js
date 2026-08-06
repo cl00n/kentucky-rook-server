@@ -179,6 +179,10 @@ app.get('/leaderboard', (_, res) => {
       dominatorWins: s.dominatorWins || 0,
       soloCarryHands: s.soloCarryHands || 0,
       speedRunWins: s.speedRunWins || 0,
+      oneHandWins: s.oneHandWins || 0,
+      quickWins: s.quickWins || 0,
+      classicWins: s.classicWins || 0,
+      leaderboardPoints: s.leaderboardPoints || 0,
       achievements: getAchievements(s),
     };
   }).filter(Boolean).sort((a, b) => b.gamesWon - a.gamesWon || b.winPct - a.winPct).slice(0, 50);
@@ -314,7 +318,8 @@ io.on('connection', socket => {
   });
 
   socket.on('player_stats', ({ bidMade, bidSet, lawedOff, tricksWon, pointsScored, won,
-    cpuDifficulty, perfectBid, shutout, highBidMade, dominator, soloCarry, speedRun }) => {
+    cpuDifficulty, perfectBid, shutout, highBidMade, dominator, soloCarry, speedRun,
+    oneHand, quickGame }) => {
     if (!socket.data.userId) return;
     ensureStats(socket.data.userId);
     const s = stats.get(socket.data.userId);
@@ -334,6 +339,17 @@ io.on('connection', socket => {
     if (dominator) s.dominatorWins = (s.dominatorWins || 0) + 1;
     if (soloCarry) s.soloCarryHands = (s.soloCarryHands || 0) + 1;
     if (speedRun) s.speedRunWins = (s.speedRunWins || 0) + 1;
+    // Game type wins
+    if (won === true) {
+      if (oneHand) s.oneHandWins = (s.oneHandWins || 0) + 1;
+      else if (quickGame) s.quickWins = (s.quickWins || 0) + 1;
+      else s.classicWins = (s.classicWins || 0) + 1;
+      // Award XP
+      let xp = oneHand ? 5 : quickGame ? 8 : 15;
+      if (cpuDifficulty === 'hard') xp += 5;
+      else if (cpuDifficulty === 'medium') xp += 2;
+      s.leaderboardPoints = (s.leaderboardPoints || 0) + xp;
+    }
     // Streak tracking
     if (won === true) {
       s.currentStreak = (s.currentStreak || 0) + 1;
