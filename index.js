@@ -497,20 +497,20 @@ io.on('connection', socket => {
     // CPU difficulty wins
         // XP: wins and losses both give XP, wins give more
     // One Hand
-    if      (oneHand && cpuDifficulty === 'easy')   { if(won){s.cpuWinsEasy++;   s.leaderboardPoints=(s.leaderboardPoints||0)+1;} }
-    else if (oneHand && cpuDifficulty === 'medium') { if(won){s.cpuWinsMedium++; s.leaderboardPoints=(s.leaderboardPoints||0)+2;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+1;} }
-    else if (oneHand && cpuDifficulty === 'hard')   { if(won){s.cpuWinsHard++;   s.leaderboardPoints=(s.leaderboardPoints||0)+3;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+1;} }
-    else if (oneHand && !cpuDifficulty)             { if(won){s.leaderboardPoints=(s.leaderboardPoints||0)+5;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+2;} }
+    if      (oneHand && cpuDifficulty === 'easy')   { s.cpuWinsEasy++;   if(won){s.oneHandWins=(s.oneHandWins||0)+1; s.leaderboardPoints=(s.leaderboardPoints||0)+10;} }
+    else if (oneHand && cpuDifficulty === 'medium') { s.cpuWinsMedium++; if(won){s.oneHandWins=(s.oneHandWins||0)+1; s.leaderboardPoints=(s.leaderboardPoints||0)+20;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+5;} }
+    else if (oneHand && cpuDifficulty === 'hard')   { s.cpuWinsHard++;   if(won){s.oneHandWins=(s.oneHandWins||0)+1; s.leaderboardPoints=(s.leaderboardPoints||0)+35;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+10;} }
+    else if (oneHand && !cpuDifficulty)             { if(won){s.oneHandWins=(s.oneHandWins||0)+1; s.leaderboardPoints=(s.leaderboardPoints||0)+30;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+10;} }
     // Quick Game
-    else if (quickGame && cpuDifficulty === 'easy')   { if(won){s.cpuWinsEasy++;   s.leaderboardPoints=(s.leaderboardPoints||0)+3;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+1;} }
-    else if (quickGame && cpuDifficulty === 'medium') { if(won){s.cpuWinsMedium++; s.leaderboardPoints=(s.leaderboardPoints||0)+8;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+3;} }
-    else if (quickGame && cpuDifficulty === 'hard')   { if(won){s.cpuWinsHard++;   s.leaderboardPoints=(s.leaderboardPoints||0)+15;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+5;} }
-    else if (quickGame && !cpuDifficulty)             { if(won){s.leaderboardPoints=(s.leaderboardPoints||0)+25;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+10;} }
+    else if (quickGame && cpuDifficulty === 'easy')   { s.cpuWinsEasy++;   s.quickWins=(s.quickWins||0)+(won?1:0); if(won){s.leaderboardPoints=(s.leaderboardPoints||0)+20;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+5;} }
+    else if (quickGame && cpuDifficulty === 'medium') { s.cpuWinsMedium++; s.quickWins=(s.quickWins||0)+(won?1:0); if(won){s.leaderboardPoints=(s.leaderboardPoints||0)+40;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+10;} }
+    else if (quickGame && cpuDifficulty === 'hard')   { s.cpuWinsHard++;   s.quickWins=(s.quickWins||0)+(won?1:0); if(won){s.leaderboardPoints=(s.leaderboardPoints||0)+65;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+20;} }
+    else if (quickGame && !cpuDifficulty)             { s.quickWins=(s.quickWins||0)+(won?1:0); if(won){s.leaderboardPoints=(s.leaderboardPoints||0)+75;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+25;} }
     // Classic
-    else if (cpuDifficulty === 'easy')   { if(won){s.cpuWinsEasy++;   s.leaderboardPoints=(s.leaderboardPoints||0)+5;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+2;} }
-    else if (cpuDifficulty === 'medium') { if(won){s.cpuWinsMedium++; s.leaderboardPoints=(s.leaderboardPoints||0)+15;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+5;} }
-    else if (cpuDifficulty === 'hard')   { if(won){s.cpuWinsHard++;   s.leaderboardPoints=(s.leaderboardPoints||0)+30;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+10;} }
-    else if (!cpuDifficulty)             { if(won){s.leaderboardPoints=(s.leaderboardPoints||0)+50;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+20;} }
+    else if (cpuDifficulty === 'easy')   { s.cpuWinsEasy++;   s.classicWins=(s.classicWins||0)+(won?1:0); if(won){s.leaderboardPoints=(s.leaderboardPoints||0)+30;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+5;} }
+    else if (cpuDifficulty === 'medium') { s.cpuWinsMedium++; s.classicWins=(s.classicWins||0)+(won?1:0); if(won){s.leaderboardPoints=(s.leaderboardPoints||0)+75;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+15;} }
+    else if (cpuDifficulty === 'hard')   { s.cpuWinsHard++;   s.classicWins=(s.classicWins||0)+(won?1:0); if(won){s.leaderboardPoints=(s.leaderboardPoints||0)+120;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+30;} }
+    else if (!cpuDifficulty)             { s.classicWins=(s.classicWins||0)+(won?1:0); if(won){s.leaderboardPoints=(s.leaderboardPoints||0)+150;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+50;} }
     // Special game feats
     if (perfectBid) s.perfectBids = (s.perfectBids || 0) + 1;
     if (shutout) s.shutouts = (s.shutouts || 0) + 1;
