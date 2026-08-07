@@ -229,6 +229,69 @@ app.post('/auth/validate', (req, res) => {
   res.json({ ok: true, username: user.username, userId: user.id });
 });
 
+app.post('/stats', async (req, res) => {
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : (req.body||{}).token;
+  const user = getUserByToken(token);
+  if (!user) return res.status(401).json({ error: 'Invalid session.' });
+  ensureStats(user.id);
+  if (user.username?.toLowerCase() === 'admin') return res.json({ ok: true });
+  const s = stats.get(user.id);
+  const { bidMade, bidSet, lawedOff, tricksWon, pointsScored, won,
+    cpuDifficulty, perfectBid, shutout, highBidMade, dominator, soloCarry, speedRun,
+    bid150Made, bid160Made, oneHand, quickGame, rookTrickWin, cleanSweep, ghostWin,
+    gamblerBid, nonBidderWin, clutchRook, bombSquad, comebackWin, hatTrick, bloodMoney,
+    circusAct, slowBurn, pointMagnet, wildCard, tidalWave, onlineWin, perfectGame,
+    warOfAttrition, fiveHundred, speedster, allIn } = req.body || {};
+  const badgesBefore = new Set(getAchievements(s).map(a => a.id));
+  s.gamesPlayed = (s.gamesPlayed || 0) + 1;
+  if (won === true) s.gamesWon = (s.gamesWon || 0) + 1;
+  if (bidMade) { s.bidsMade = (s.bidsMade||0)+1; s.consecutiveBidsMade = (s.consecutiveBidsMade||0)+1; }
+  if (bidSet) { s.bidsSet = (s.bidsSet||0)+1; s.consecutiveBidsMade = 0; }
+  if (lawedOff) s.lawedOff = (s.lawedOff||0)+1;
+  s.tricksWon = (s.tricksWon||0) + (tricksWon||0);
+  s.pointsScored = (s.pointsScored||0) + (pointsScored||0);
+  if      (oneHand && cpuDifficulty === 'easy')   { s.cpuWinsEasy++;   if(won){s.oneHandWins=(s.oneHandWins||0)+1; s.leaderboardPoints=(s.leaderboardPoints||0)+10;} }
+  else if (oneHand && cpuDifficulty === 'medium') { s.cpuWinsMedium++; if(won){s.oneHandWins=(s.oneHandWins||0)+1; s.leaderboardPoints=(s.leaderboardPoints||0)+20;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+5;} }
+  else if (oneHand && cpuDifficulty === 'hard')   { s.cpuWinsHard++;   if(won){s.oneHandWins=(s.oneHandWins||0)+1; s.leaderboardPoints=(s.leaderboardPoints||0)+35;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+10;} }
+  else if (oneHand && !cpuDifficulty)             { if(won){s.oneHandWins=(s.oneHandWins||0)+1; s.leaderboardPoints=(s.leaderboardPoints||0)+30;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+10;} }
+  else if (quickGame && cpuDifficulty === 'easy')   { s.cpuWinsEasy++;   s.quickWins=(s.quickWins||0)+(won?1:0); if(won){s.leaderboardPoints=(s.leaderboardPoints||0)+20;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+5;} }
+  else if (quickGame && cpuDifficulty === 'medium') { s.cpuWinsMedium++; s.quickWins=(s.quickWins||0)+(won?1:0); if(won){s.leaderboardPoints=(s.leaderboardPoints||0)+40;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+10;} }
+  else if (quickGame && cpuDifficulty === 'hard')   { s.cpuWinsHard++;   s.quickWins=(s.quickWins||0)+(won?1:0); if(won){s.leaderboardPoints=(s.leaderboardPoints||0)+65;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+20;} }
+  else if (quickGame && !cpuDifficulty)             { s.quickWins=(s.quickWins||0)+(won?1:0); if(won){s.leaderboardPoints=(s.leaderboardPoints||0)+75;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+25;} }
+  else if (cpuDifficulty === 'easy')   { s.cpuWinsEasy++;   s.classicWins=(s.classicWins||0)+(won?1:0); if(won){s.leaderboardPoints=(s.leaderboardPoints||0)+30;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+5;} }
+  else if (cpuDifficulty === 'medium') { s.cpuWinsMedium++; s.classicWins=(s.classicWins||0)+(won?1:0); if(won){s.leaderboardPoints=(s.leaderboardPoints||0)+75;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+15;} }
+  else if (cpuDifficulty === 'hard')   { s.cpuWinsHard++;   s.classicWins=(s.classicWins||0)+(won?1:0); if(won){s.leaderboardPoints=(s.leaderboardPoints||0)+120;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+30;} }
+  else if (!cpuDifficulty)             { s.classicWins=(s.classicWins||0)+(won?1:0); if(won){s.leaderboardPoints=(s.leaderboardPoints||0)+150;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+50;} }
+  if (perfectBid) s.perfectBids=(s.perfectBids||0)+1;
+  if (shutout) s.shutouts=(s.shutouts||0)+1;
+  if (highBidMade) s.highBidsMade=(s.highBidsMade||0)+1;
+  if (bid150Made) s.bid150Made=(s.bid150Made||0)+1;
+  if (bid160Made) s.bid160Made=(s.bid160Made||0)+1;
+  if (dominator) s.dominatorWins=(s.dominatorWins||0)+1;
+  if (soloCarry) s.soloCarryHands=(s.soloCarryHands||0)+1;
+  if (speedRun) s.speedRunWins=(s.speedRunWins||0)+1;
+  if (rookTrickWin) s.rookTrickWins=(s.rookTrickWins||0)+1;
+  if (cleanSweep) s.cleanSweeps=(s.cleanSweeps||0)+1;
+  if (ghostWin) s.ghostWins=(s.ghostWins||0)+1;
+  if (gamblerBid) s.gamblerBids=(s.gamblerBids||0)+1;
+  if (comebackWin) s.comebackWins=(s.comebackWins||0)+1;
+  if (hatTrick) s.hatTrickWins=(s.hatTrickWins||0)+1;
+  if (bloodMoney) s.bloodMoneyWins=(s.bloodMoneyWins||0)+1;
+  if (circusAct) s.circusActWins=(s.circusActWins||0)+1;
+  if (slowBurn) s.slowBurnWins=(s.slowBurnWins||0)+1;
+  if (pointMagnet) s.pointMagnetWins=(s.pointMagnetWins||0)+1;
+  if (wildCard) s.wildCardWins=(s.wildCardWins||0)+1;
+  if (tidalWave) s.tidalWaveWins=(s.tidalWaveWins||0)+1;
+  if (won===true) { s.currentStreak=(s.currentStreak||0)+1; s.bestStreak=Math.max(s.bestStreak||0,s.currentStreak); }
+  else if (won===false) { s.currentStreak=0; }
+  const badgesAfter = getAchievements(s);
+  const newBadges = badgesAfter.filter(a => !badgesBefore.has(a.id));
+  const xpEarned = (s.leaderboardPoints||0) - ((s.leaderboardPoints||0) - (newBadges.reduce((sum,b)=>sum+(b.xp||0),0)));
+  saveDB();
+  res.json({ ok: true, leaderboardPoints: s.leaderboardPoints, newBadges });
+});
+
 app.get('/leaderboard', (_, res) => {
   const rows = [...stats.entries()].map(([userId, s]) => {
     const u = [...users.values()].find(u => u.id === userId);
