@@ -113,7 +113,9 @@ function getAchievements(s) {
   if ((s.rookieOnlineWins||0) >= 1) badges.push({ id: 'rookie', emoji: '👶', name: 'Rookie', desc: 'Win your first online game' , xp: 5});
   if ((s.gamesWon||0) >= 10) badges.push({ id: 'night_owl', emoji: '🌙', name: 'Night Owl', desc: 'Win 10 games total' , xp: 10});
   if ((s.perfectGames||0) >= 1) badges.push({ id: 'perfect_game', emoji: '💯', name: 'Perfect Game', desc: 'Win without opponents scoring any points' , xp: 40});
-  if (s.kingOfTable) badges.push({ id: 'king_table', emoji: '🦁', name: 'King of the Table', desc: 'Hold the #1 leaderboard spot' , xp: 40});
+  if (s.kingOfTable === 1) badges.push({ id: 'king_table', emoji: '👑', name: 'King of the Table', desc: 'Hold the #1 leaderboard spot', xp: 40});
+  if (s.kingOfTable === 2) badges.push({ id: 'silver_table', emoji: '🥈', name: 'Silver Seat', desc: 'Hold the #2 leaderboard spot', xp: 25});
+  if (s.kingOfTable === 3) badges.push({ id: 'bronze_table', emoji: '🥉', name: 'Bronze Seat', desc: 'Hold the #3 leaderboard spot', xp: 15});
   const _totalScore = (s.leaderboardPoints||0) + badges.length * 10;
   let _curRank = null; for (const r of RANKS) { if (_totalScore >= r.minPoints) _curRank = r; }
   if (_curRank) badges.push({ id: 'graduated', emoji: '🎓', name: 'Graduated', desc: `Reached rank ${_curRank.label}`, xp: 10 });
@@ -656,7 +658,8 @@ io.on('connection', socket => {
     const newlyUnlocked = badgesAfter.filter(a => !badgesBefore.has(a.id));
     // King of the Table: check if user is #1
     const allRankScores = [...stats.entries()].map(([uid, st]) => ({ uid, score: st.leaderboardPoints||0 })).sort((a,b) => b.score - a.score);
-    if (allRankScores[0]?.uid === socket.data.userId) { s.kingOfTable = true; } else { s.kingOfTable = false; }
+    const myRank = allRankScores.findIndex(r => r.uid === socket.data.userId) + 1;
+    s.kingOfTable = myRank <= 3 ? myRank : 0;
     // Award XP for newly unlocked achievements
     if (newlyUnlocked.length > 0) {
       const bonusXP = newlyUnlocked.reduce((sum, a) => sum + (a.xp || 10), 0);
