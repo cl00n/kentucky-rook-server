@@ -669,17 +669,28 @@ io.on('connection', socket => {
     const room = rooms[code];
     if (!room) return;
     room.players = room.players.filter(p => p.id !== socket.id);
-    if (room.players.length === 0) { delete rooms[code]; return; }
+    if (room.players.length === 0 || room.started) {
+      // Kill started games immediately when anyone leaves — no rejoining mid-game
+      io.to(code).emit('game_abandoned', { username });
+      delete rooms[code];
+      return;
+    }
     if (room.host === socket.id) room.host = room.players[0].id;
     io.to(code).emit('player_left', { username, room: roomSummary(room) });
   });
 });
 
 
-// Auto-cleanup empty rooms every 60 seconds
+// Auto-cleanup stale rooms every 60 seconds
 setInterval(() => {
   Object.keys(rooms).forEach(code => {
-    if (rooms[code].players.length === 0) delete rooms[code];
+    const room = rooms[code];
+    if (room.players.length === 0) { delete rooms[code]; return; }
+    // Kill started games with only 1 player left
+    if (room.started && room.players.length < 2) {
+      io.to(code).emit('game_abandoned', { username: null });
+      delete rooms[code];
+    }
   });
 }, 60000);
 
