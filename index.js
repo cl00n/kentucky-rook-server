@@ -348,6 +348,18 @@ app.get('/rooms', (_, res) => {
 });
 
 
+app.post('/admin/delete-user', (req, res) => {
+  const { username, secret } = req.body || {};
+  if (secret !== 'rook-admin-2026') return res.status(403).json({ error: 'Forbidden' });
+  const key = (username || '').toLowerCase();
+  const user = users.get(key);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  stats.delete(user.id);
+  users.delete(key);
+  saveDB();
+  res.json({ ok: true, deleted: username });
+});
+
 app.post('/cleanup', (req, res) => {
   const before = Object.keys(rooms).length;
   Object.keys(rooms).forEach(code => {
