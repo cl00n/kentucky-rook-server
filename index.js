@@ -496,7 +496,7 @@ io.on('connection', socket => {
     });
   });
 
-  socket.on('start', ({ initialState, difficulty }, cb) => {
+  socket.on('start', ({ initialState, difficulty, gameLength }, cb) => {
     const room = rooms[socket.data.code];
     if (!room) return cb?.({ ok: false, error: 'Room not found.' });
     if (room.host !== socket.id) return cb?.({ ok: false, error: 'Only the host can start.' });
@@ -510,10 +510,10 @@ io.on('connection', socket => {
       const sock = io.sockets.sockets.get(p.id);
       if (sock) sock.data.seat = p.seat;
     });
-    room.started = true; room.state = initialState; room.difficulty = difficulty || 'medium';
+    room.started = true; room.state = initialState; room.difficulty = difficulty || 'medium'; room.gameLength = gameLength || 500;
     const hostPlayer = room.players.find(p => p.id === socket.id);
     cb?.({ ok: true, seat: hostPlayer?.seat ?? 0 });
-    io.to(room.code).emit('game_started', { state: initialState, players: room.players.map(p => ({ username: p.username, seat: p.seat, team: p.team ?? p.seat % 2, avatar: users.get(p.username?.toLowerCase())?.avatar || null })), difficulty: room.difficulty });
+    io.to(room.code).emit('game_started', { state: initialState, players: room.players.map(p => ({ username: p.username, seat: p.seat, team: p.team ?? p.seat % 2, avatar: users.get(p.username?.toLowerCase())?.avatar || null })), difficulty: room.difficulty, gameLength: room.gameLength });
   });
 
   socket.on('action', ({ type, payload }) => {
@@ -661,6 +661,19 @@ io.on('connection', socket => {
     const room = rooms[socket.data.code];
     if (!room) return;
     io.to(room.code).emit('chat', { username: socket.data.username, message });
+  });
+
+  socket.on('leave_room', () => {
+    const { code, username } = socket.data;
+    const room = rooms[code];
+    if (!room) return;
+    room.players = room.players.filter(p => p.id !== socket.id);
+    socket.data.code = null;
+    socket.leave(code);
+    if (room.players.length === 0) { delete rooms[code]; return; }
+    if (room.started) { io.to(code).emit('game_abandoned', { username }); delete rooms[code]; return; }
+    if (room.host === socket.id) room.host = room.players[0].id;
+    io.to(code).emit('player_left', { username, room: roomSummary(room) });
   });
 
   socket.on('disconnect', () => {
