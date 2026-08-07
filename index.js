@@ -513,7 +513,7 @@ io.on('connection', socket => {
     room.started = true; room.state = initialState; room.difficulty = difficulty || 'medium';
     const hostPlayer = room.players.find(p => p.id === socket.id);
     cb?.({ ok: true, seat: hostPlayer?.seat ?? 0 });
-    io.to(room.code).emit('game_started', { state: initialState, players: room.players.map(p => ({ username: p.username, seat: p.seat, team: p.team ?? p.seat % 2 })), difficulty: room.difficulty });
+    io.to(room.code).emit('game_started', { state: initialState, players: room.players.map(p => ({ username: p.username, seat: p.seat, team: p.team ?? p.seat % 2, avatar: users.get(p.username?.toLowerCase())?.avatar || null })), difficulty: room.difficulty });
   });
 
   socket.on('action', ({ type, payload }) => {
