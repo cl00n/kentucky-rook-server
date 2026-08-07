@@ -253,7 +253,7 @@ app.post('/stats', async (req, res) => {
   if (lawedOff) s.lawedOff = (s.lawedOff||0)+1;
   s.tricksWon = (s.tricksWon||0) + (tricksWon||0);
   s.pointsScored = (s.pointsScored||0) + (pointsScored||0);
-  if      (oneHand && cpuDifficulty === 'easy')   { s.cpuWinsEasy++;   if(won){s.oneHandWins=(s.oneHandWins||0)+1; s.leaderboardPoints=(s.leaderboardPoints||0)+10;} }
+  if      (oneHand && cpuDifficulty === 'easy')   { s.cpuWinsEasy++;   if(won){s.oneHandWins=(s.oneHandWins||0)+1; s.leaderboardPoints=(s.leaderboardPoints||0)+10;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+3;} }
   else if (oneHand && cpuDifficulty === 'medium') { s.cpuWinsMedium++; if(won){s.oneHandWins=(s.oneHandWins||0)+1; s.leaderboardPoints=(s.leaderboardPoints||0)+20;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+5;} }
   else if (oneHand && cpuDifficulty === 'hard')   { s.cpuWinsHard++;   if(won){s.oneHandWins=(s.oneHandWins||0)+1; s.leaderboardPoints=(s.leaderboardPoints||0)+35;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+10;} }
   else if (oneHand && !cpuDifficulty)             { if(won){s.oneHandWins=(s.oneHandWins||0)+1; s.leaderboardPoints=(s.leaderboardPoints||0)+30;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+10;} }
@@ -573,7 +573,7 @@ io.on('connection', socket => {
     // CPU difficulty wins
         // XP: wins and losses both give XP, wins give more
     // One Hand
-    if      (oneHand && cpuDifficulty === 'easy')   { s.cpuWinsEasy++;   if(won){s.oneHandWins=(s.oneHandWins||0)+1; s.leaderboardPoints=(s.leaderboardPoints||0)+10;} }
+    if      (oneHand && cpuDifficulty === 'easy')   { s.cpuWinsEasy++;   if(won){s.oneHandWins=(s.oneHandWins||0)+1; s.leaderboardPoints=(s.leaderboardPoints||0)+10;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+3;} }
     else if (oneHand && cpuDifficulty === 'medium') { s.cpuWinsMedium++; if(won){s.oneHandWins=(s.oneHandWins||0)+1; s.leaderboardPoints=(s.leaderboardPoints||0)+20;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+5;} }
     else if (oneHand && cpuDifficulty === 'hard')   { s.cpuWinsHard++;   if(won){s.oneHandWins=(s.oneHandWins||0)+1; s.leaderboardPoints=(s.leaderboardPoints||0)+35;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+10;} }
     else if (oneHand && !cpuDifficulty)             { if(won){s.oneHandWins=(s.oneHandWins||0)+1; s.leaderboardPoints=(s.leaderboardPoints||0)+30;} else{s.leaderboardPoints=(s.leaderboardPoints||0)+10;} }
