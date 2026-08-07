@@ -522,6 +522,14 @@ io.on('connection', socket => {
     socket.to(room.code).emit('action', { type, payload, username: socket.data.username });
   });
 
+  // Coordinated trick completion: host sends both states + delay, server timestamps and broadcasts to ALL
+  socket.on('trick_sync', ({ intermediate, final: finalState, displayMs }) => {
+    const room = rooms[socket.data.code];
+    if (!room?.started || room.host !== socket.id) return;
+    const serverTs = Date.now();
+    io.to(room.code).emit('trick_sync', { intermediate, final: finalState, displayMs, serverTs });
+  });
+
   socket.on('sync_state', ({ state }) => {
     const room = rooms[socket.data.code];
     if (!room) return;
