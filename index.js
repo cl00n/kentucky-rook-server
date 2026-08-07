@@ -48,6 +48,7 @@ async function saveDB() {
 
 function ensureStats(userId) {
   if (!stats.has(userId)) stats.set(userId, {
+    prestige: 0,
     gamesPlayed:0, gamesWon:0, bidsMade:0, bidsSet:0,
     tricksWon:0, pointsScored:0, currentStreak:0, bestStreak:0, lawedOff:0, consecutiveBidsMade:0,
     cpuWinsEasy:0, cpuWinsMedium:0, cpuWinsHard:0, leaderboardPoints:0,
@@ -326,6 +327,7 @@ app.get('/leaderboard', (_, res) => {
       leaderboardPoints: s.leaderboardPoints || 0,
       rank: getPlayerRank(s.leaderboardPoints, getAchievements(s).length),
       avatar: u.avatar || null,
+      prestige: s.prestige || 0,
       onlineGamesPlayed: s.onlineGamesPlayed || 0,
       onlineGamesWon: s.onlineGamesWon || 0,
       onlineWinPct: (s.onlineGamesPlayed||0) > 0 ? +((100 * (s.onlineGamesWon||0) / s.onlineGamesPlayed).toFixed(1)) : 0,
@@ -359,6 +361,20 @@ app.post('/cleanup', (req, res) => {
 });
 
 app.get('/health', (_, res) => res.json({ ok: true, rooms: Object.keys(rooms).length, users: users.size }));
+
+app.post('/prestige', (req, res) => {
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : (req.body||{}).token;
+  const user = getUserByToken(token);
+  if (!user) return res.status(401).json({ error: 'Invalid session.' });
+  ensureStats(user.id);
+  const s = stats.get(user.id);
+  if ((s.leaderboardPoints || 0) < 820) return res.status(400).json({ error: 'Must reach Rook rank first.' });
+  s.prestige = (s.prestige || 0) + 1;
+  s.leaderboardPoints = 0;
+  saveDB();
+  res.json({ ok: true, prestige: s.prestige });
+});
 
 // ── Friends endpoints ────────────────────────────────────────────────────────
 app.get('/friends', (req, res) => {
