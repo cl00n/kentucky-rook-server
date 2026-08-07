@@ -325,6 +325,10 @@ app.get('/leaderboard', (_, res) => {
       rank: getPlayerRank(s.leaderboardPoints, getAchievements(s).length),
       avatar: u.avatar || null,
     };
+      onlineGamesPlayed: s.onlineGamesPlayed || 0,
+      onlineGamesWon: s.onlineGamesWon || 0,
+      onlineWinPct: (s.onlineGamesPlayed||0) > 0 ? +((100 * (s.onlineGamesWon||0) / s.onlineGamesPlayed).toFixed(1)) : 0,
+    };
   }).filter(Boolean).map(p => ({
     ...p,
     rankScore: p.leaderboardPoints || 0,
@@ -619,8 +623,9 @@ io.on('connection', socket => {
     if (pirate) s.pirateWins = (s.pirateWins||0) + 1;
     if (comebackBig) s.comebackBigWins = (s.comebackBigWins||0) + 1;
     if (galaxyBrain) s.galaxyBrainWins = (s.galaxyBrainWins||0) + 1;
-    // Online wins (non-CPU, non-special)
-    if (won === true && !cpuDifficulty && !oneHand && !quickGame) s.onlineGamesWon = (s.onlineGamesWon||0) + 1;
+    // Online play tracking
+    if (!cpuDifficulty) s.onlineGamesPlayed = (s.onlineGamesPlayed||0) + 1;
+    if (won === true && !cpuDifficulty) s.onlineGamesWon = (s.onlineGamesWon||0) + 1;
     // Mode-specific wins
     if (won === true && !oneHand && !quickGame) s.classicWins = (s.classicWins||0) + 1;
     if (won === true && quickGame) s.quickWins = (s.quickWins||0) + 1;
