@@ -324,7 +324,6 @@ app.get('/leaderboard', (_, res) => {
       leaderboardPoints: s.leaderboardPoints || 0,
       rank: getPlayerRank(s.leaderboardPoints, getAchievements(s).length),
       avatar: u.avatar || null,
-    };
       onlineGamesPlayed: s.onlineGamesPlayed || 0,
       onlineGamesWon: s.onlineGamesWon || 0,
       onlineWinPct: (s.onlineGamesPlayed||0) > 0 ? +((100 * (s.onlineGamesWon||0) / s.onlineGamesPlayed).toFixed(1)) : 0,
