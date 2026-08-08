@@ -9,6 +9,8 @@ const { v4: uuidv4 } = require('uuid');
 const users = new Map();       // username.lower -> { id, username, password }
 const sessions = new Map();    // token -> { userId, remember, expiresAt }
 const stats = new Map();       // userId -> { gamesPlayed, gamesWon, bidsMade, bidsSet, tricksWon, pointsScored }
+const friends = new Map();     // userId -> Set of friend userIds
+const friendRequests = new Map(); // userId -> Set of userIds who sent requests TO this user
 
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL || 'https://romantic-monitor-131688.upstash.io';
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || 'gQAAAAAAAgJoAAIgcDEzMmI5OWE5YTU5Nzc0MzA0YTg2MzY4MTYwMGE0MmFhYw';
@@ -25,19 +27,23 @@ async function redisCmd(cmd) {
 
 async function loadDB() {
   try {
-    const [usersJson, statsJson, sessionsJson] = await Promise.all([
+    const [usersJson, statsJson, sessionsJson, friendsJson, requestsJson] = await Promise.all([
       redisCmd(['GET', 'rook:users']),
       redisCmd(['GET', 'rook:stats']),
       redisCmd(['GET', 'rook:sessions']),
+      redisCmd(['GET', 'rook:friends']),
+      redisCmd(['GET', 'rook:friend_requests']),
     ]);
     if (usersJson) JSON.parse(usersJson).forEach(([k,v]) => users.set(k, v));
     if (statsJson) JSON.parse(statsJson).forEach(([k,v]) => stats.set(k, v));
     if (sessionsJson) {
       const now = Math.floor(Date.now() / 1000);
       JSON.parse(sessionsJson).forEach(([k,v]) => {
-        if (v.expiresAt > now) sessions.set(k, v); // only restore non-expired sessions
+        if (v.expiresAt > now) sessions.set(k, v);
       });
     }
+    if (friendsJson) JSON.parse(friendsJson).forEach(([k,v]) => friends.set(k, new Set(v)));
+    if (requestsJson) JSON.parse(requestsJson).forEach(([k,v]) => friendRequests.set(k, new Set(v)));
     console.log(`Loaded ${users.size} users, ${sessions.size} sessions from Redis`);
   } catch(e) { console.warn('Could not load from Redis:', e.message); }
 }
@@ -48,6 +54,8 @@ async function saveDB() {
       redisCmd(['SET', 'rook:users', JSON.stringify([...users.entries()])]),
       redisCmd(['SET', 'rook:stats', JSON.stringify([...stats.entries()])]),
       redisCmd(['SET', 'rook:sessions', JSON.stringify([...sessions.entries()])]),
+      redisCmd(['SET', 'rook:friends', JSON.stringify([...friends.entries()].map(([k,v]) => [k,[...v]]))]),
+      redisCmd(['SET', 'rook:friend_requests', JSON.stringify([...friendRequests.entries()].map(([k,v]) => [k,[...v]]))]),
     ]);
   } catch(e) { console.warn('Could not save to Redis:', e.message); }
 }
@@ -202,6 +210,76 @@ app.post('/cleanup', (req, res) => {
 });
 
 app.get('/health', (_, res) => res.json({ ok: true, rooms: Object.keys(rooms).length, users: users.size }));
+
+// ── Friends API ─────────────────────────────────────────────────────────────
+function authMiddleware(req, res, next) {
+  const token = (req.headers.authorization || '').replace('Bearer ', '');
+  const user = getUserByToken(token);
+  if (!user) return res.status(401).json({ error: 'Not authenticated.' });
+  req.user = user;
+  next();
+}
+
+function getFriendList(userId) {
+  const myFriends = friends.get(userId) || new Set();
+  return [...myFriends].map(fId => {
+    const u = [...users.values()].find(u => u.id === fId);
+    const s = stats.get(fId) || {};
+    return u ? { userId: fId, username: u.username, gamesWon: s.gamesWon || 0, gamesPlayed: s.gamesPlayed || 0 } : null;
+  }).filter(Boolean);
+}
+
+function getPendingRequests(userId) {
+  const reqs = friendRequests.get(userId) || new Set();
+  return [...reqs].map(fromId => {
+    const u = [...users.values()].find(u => u.id === fromId);
+    return u ? { userId: fromId, username: u.username } : null;
+  }).filter(Boolean);
+}
+
+app.get('/friends', authMiddleware, (req, res) => {
+  res.json({ friends: getFriendList(req.user.id), pending: getPendingRequests(req.user.id) });
+});
+
+app.post('/friends/request', authMiddleware, (req, res) => {
+  const { username } = req.body || {};
+  const target = users.get((username || '').toLowerCase());
+  if (!target) return res.status(404).json({ error: 'User not found.' });
+  if (target.id === req.user.id) return res.status(400).json({ error: 'Cannot add yourself.' });
+  const myFriends = friends.get(req.user.id) || new Set();
+  if (myFriends.has(target.id)) return res.status(400).json({ error: 'Already friends.' });
+  if (!friendRequests.has(target.id)) friendRequests.set(target.id, new Set());
+  friendRequests.get(target.id).add(req.user.id);
+  saveDB();
+  res.json({ ok: true, message: `Friend request sent to ${target.username}.` });
+});
+
+app.post('/friends/respond', authMiddleware, (req, res) => {
+  const { username, accept } = req.body || {};
+  const from = users.get((username || '').toLowerCase());
+  if (!from) return res.status(404).json({ error: 'User not found.' });
+  const myRequests = friendRequests.get(req.user.id) || new Set();
+  if (!myRequests.has(from.id)) return res.status(400).json({ error: 'No pending request from this user.' });
+  myRequests.delete(from.id);
+  if (accept) {
+    if (!friends.has(req.user.id)) friends.set(req.user.id, new Set());
+    if (!friends.has(from.id)) friends.set(from.id, new Set());
+    friends.get(req.user.id).add(from.id);
+    friends.get(from.id).add(req.user.id);
+  }
+  saveDB();
+  res.json({ ok: true, accepted: !!accept });
+});
+
+app.post('/friends/remove', authMiddleware, (req, res) => {
+  const { username } = req.body || {};
+  const target = users.get((username || '').toLowerCase());
+  if (!target) return res.status(404).json({ error: 'User not found.' });
+  (friends.get(req.user.id) || new Set()).delete(target.id);
+  (friends.get(target.id) || new Set()).delete(req.user.id);
+  saveDB();
+  res.json({ ok: true });
+});
 
 // ── Socket.io ────────────────────────────────────────────────────────────────
 const server = http.createServer(app);
