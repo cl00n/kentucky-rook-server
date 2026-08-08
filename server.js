@@ -306,6 +306,7 @@ io.on('connection', socket => {
       const s = stats.get(p.userId);
       s.gamesPlayed++; if (p.seat === winningSeat) s.gamesWon++;
     });
+    saveDB(); // persist game results so they survive restarts
   });
 
   socket.on('player_stats', ({ bidMade, bidSet, lawedOff, tricksWon, pointsScored, won,
