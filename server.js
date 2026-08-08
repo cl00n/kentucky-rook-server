@@ -10,27 +10,6 @@ const users = new Map();       // username.lower -> { id, username, password }
 const sessions = new Map();    // token -> { userId, remember, expiresAt }
 const stats = new Map();       // userId -> { gamesPlayed, gamesWon, bidsMade, bidsSet, tricksWon, pointsScored }
 
-
-const fs = require('fs');
-const DB_FILE = process.env.DB_PATH || './data.json';
-
-function loadDB() {
-  try {
-    if (fs.existsSync(DB_FILE)) {
-      const d = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-      if (d.users) d.users.forEach(([k,v]) => users.set(k, v));
-      if (d.stats) d.stats.forEach(([k,v]) => stats.set(k, v));
-    }
-  } catch(e) { console.warn('Could not load DB:', e.message); }
-}
-
-function saveDB() {
-  try {
-    fs.writeFileSync(DB_FILE, JSON.stringify({ users: [...users.entries()], stats: [...stats.entries()] }));
-  } catch(e) { console.warn('Could not save DB:', e.message); }
-}
-
-
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL || 'https://romantic-monitor-131688.upstash.io';
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || 'gQAAAAAAAgJoAAIgcDEzMmI5OWE5YTU5Nzc0MzA0YTg2MzY4MTYwMGE0MmFhYw';
 
@@ -46,18 +25,30 @@ async function redisCmd(cmd) {
 
 async function loadDB() {
   try {
-    const usersJson = await redisCmd(['GET', 'rook:users']);
-    const statsJson = await redisCmd(['GET', 'rook:stats']);
+    const [usersJson, statsJson, sessionsJson] = await Promise.all([
+      redisCmd(['GET', 'rook:users']),
+      redisCmd(['GET', 'rook:stats']),
+      redisCmd(['GET', 'rook:sessions']),
+    ]);
     if (usersJson) JSON.parse(usersJson).forEach(([k,v]) => users.set(k, v));
     if (statsJson) JSON.parse(statsJson).forEach(([k,v]) => stats.set(k, v));
-    console.log(`Loaded ${users.size} users from Redis`);
+    if (sessionsJson) {
+      const now = Math.floor(Date.now() / 1000);
+      JSON.parse(sessionsJson).forEach(([k,v]) => {
+        if (v.expiresAt > now) sessions.set(k, v); // only restore non-expired sessions
+      });
+    }
+    console.log(`Loaded ${users.size} users, ${sessions.size} sessions from Redis`);
   } catch(e) { console.warn('Could not load from Redis:', e.message); }
 }
 
 async function saveDB() {
   try {
-    await redisCmd(['SET', 'rook:users', JSON.stringify([...users.entries()])]);
-    await redisCmd(['SET', 'rook:stats', JSON.stringify([...stats.entries()])]);
+    await Promise.all([
+      redisCmd(['SET', 'rook:users', JSON.stringify([...users.entries()])]),
+      redisCmd(['SET', 'rook:stats', JSON.stringify([...stats.entries()])]),
+      redisCmd(['SET', 'rook:sessions', JSON.stringify([...sessions.entries()])]),
+    ]);
   } catch(e) { console.warn('Could not save to Redis:', e.message); }
 }
 
@@ -185,7 +176,7 @@ app.get('/leaderboard', (_, res) => {
       leaderboardPoints: s.leaderboardPoints || 0,
       achievements: getAchievements(s),
     };
-  }).filter(Boolean).sort((a, b) => b.gamesWon - a.gamesWon || b.winPct - a.winPct).slice(0, 50);
+  }).filter(Boolean).sort((a, b) => b.leaderboardPoints - a.leaderboardPoints || b.gamesWon - a.gamesWon).slice(0, 50);
   res.json(rows);
 });
 
